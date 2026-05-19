@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - Gelasio_App_Principal_GitHub_Export.zip
-      - .github/workflows/extrair-app-principal.yml
   workflow_dispatch:
 
 permissions:
@@ -31,6 +30,12 @@ jobs:
             throw 'Arquivo Gelasio_App_Principal_GitHub_Export.zip nao encontrado.'
           }
 
+          $jsonAtual = Join-Path $PWD 'Gelasio_App_Principal\Gelasio_App_Principal_usuarios.json'
+          $jsonBackup = Join-Path $PWD '_usuarios_backup.json'
+          if (Test-Path -LiteralPath $jsonAtual) {
+            Copy-Item -LiteralPath $jsonAtual -Destination $jsonBackup -Force
+          }
+
           $extractRoot = Join-Path $PWD '_github_extract'
           Remove-Item -LiteralPath $extractRoot -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Path $extractRoot | Out-Null
@@ -46,23 +51,59 @@ jobs:
 
           Remove-Item -LiteralPath $extractRoot -Recurse -Force
 
+          if ((Test-Path -LiteralPath $jsonBackup) -and !(Test-Path -LiteralPath $jsonAtual)) {
+            New-Item -ItemType Directory -Path (Split-Path -Parent $jsonAtual) -Force | Out-Null
+            Move-Item -LiteralPath $jsonBackup -Destination $jsonAtual -Force
+          } elseif (Test-Path -LiteralPath $jsonBackup) {
+            Remove-Item -LiteralPath $jsonBackup -Force
+          }
+
           @'
-          # Gelasio App Principal
+# Gelasio App Principal
 
-          Aplicativo principal Gelasio em HTA, com login, controle de usuarios, perfis de acesso e banco criptografado.
+Aplicativo principal Gelasio em HTA, com login, controle de usuarios, perfis de acesso e banco criptografado.
 
-          ## Como abrir
+## Como abrir
 
-          Execute `Abrir_Gelasio_App_Principal.cmd` no Windows, ou abra diretamente `Gelasio_App_Principal/Gelasio_App_Principal_Login.hta`.
+Execute `Abrir_Gelasio_App_Principal.cmd` no Windows, ou abra diretamente `Gelasio_App_Principal/Gelasio_App_Principal_Login.hta`.
 
-          ## Estrutura
+## Estrutura
 
-          - `Gelasio_App_Principal/Gelasio_App_Principal_Login.hta`: app principal.
-          - `Gelasio_App_Principal/logo_empresa.png`: logo da empresa.
-          - `Gelasio_App_Principal/dados/gelasio_app_db.enc`: banco criptografado do app.
-          - `Gelasio_App_Principal/README_APP_PRINCIPAL.md`: documentacao do app.
-          - `Gelasio_App_Principal_GitHub_Export.zip`: pacote de backup/exportacao.
-          '@ | Set-Content -LiteralPath 'README.md' -Encoding UTF8
+- `Gelasio_App_Principal/Gelasio_App_Principal_Login.hta`: app principal.
+- `Gelasio_App_Principal/logo_empresa.png`: logo da empresa.
+- `Gelasio_App_Principal/dados/gelasio_app_db.enc`: banco criptografado do app.
+- `Gelasio_App_Principal/Gelasio_App_Principal_usuarios.json`: JSON de validacao e testes.
+- `Gelasio_App_Principal/README_APP_PRINCIPAL.md`: documentacao do app.
+- `Gelasio_App_Principal_GitHub_Export.zip`: pacote de backup/exportacao.
+'@ | Set-Content -LiteralPath 'README.md' -Encoding UTF8
+
+          @'
+# Gelasio App Principal
+
+Este pacote cria uma entrada unica para o Painel de Cestas:
+
+- `Gelasio_App_Principal_Login.hta`: app principal com tela de login.
+- `logo_empresa.png`: logo exibida no login e no menu lateral.
+- `dados\gelasio_app_db.enc`: banco criptografado usado pelo login e pelos usuarios.
+- `Gelasio_App_Principal_usuarios.json`: base em JSON para validacoes, testes e migracao local.
+
+## Banco de dados e usuarios
+
+Depois do login com um usuario administrador, acesse `Configuracoes`.
+
+- Aba `Banco de dados`: mostra a pasta `dados`, o arquivo `gelasio_app_db.enc`, status da criptografia e a migracao do JSON antigo quando ele existir localmente.
+- Aba `Usuarios`: cria novos usuarios, altera senhas, define perfil e escolhe os modulos liberados.
+- Aba `Perfil`: define os tipos de perfil e o checklist de acessos de cada um.
+
+O app usa o banco criptografado em `dados\gelasio_app_db.enc`. O JSON de usuarios fica versionado para validacoes e testes, mas o login usa o banco criptografado quando ele existe.
+'@ | Set-Content -LiteralPath 'Gelasio_App_Principal\README_APP_PRINCIPAL.md' -Encoding UTF8
+
+          @'
+Gelasio_App_Principal/backups/
+Gelasio_App_Principal/*.tmp
+Gelasio_App_Principal/*.bak
+*.log
+'@ | Set-Content -LiteralPath '.gitignore' -Encoding UTF8
 
       - name: Commitar arquivos extraidos
         shell: pwsh
