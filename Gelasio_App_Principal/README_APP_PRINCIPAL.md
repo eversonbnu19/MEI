@@ -5,7 +5,7 @@ Este pacote cria uma entrada unica para o Painel de Cestas:
 - `Gelasio_App_Principal_Login.hta`: app principal com tela de login.
 - `logo_empresa.png`: logo exibida no login e no menu lateral.
 - `dados\gelasio_app_db.enc`: banco criptografado usado pelo login e pelos usuarios.
-- `Gelasio_App_Principal_usuarios.json`: arquivo antigo, mantido apenas como legado/migracao.
+- `README_APP_PRINCIPAL.md`: documentacao do app.
 
 ## Usuarios iniciais
 
@@ -40,11 +40,11 @@ Enquanto as telas antigas nao forem migradas para dentro do app unico, o login f
 
 Depois do login com um usuario administrador, acesse `Configuracoes`.
 
-- Aba `Banco de dados`: mostra a pasta `dados`, o arquivo `gelasio_app_db.enc`, status da criptografia e a migracao do JSON antigo.
+- Aba `Banco de dados`: mostra a pasta `dados`, o arquivo `gelasio_app_db.enc`, status da criptografia e a migracao do JSON antigo quando ele existir localmente.
 - Aba `Usuarios`: cria novos usuarios, altera senhas, define perfil e escolhe os modulos liberados.
 - Aba `Perfil`: define os tipos de perfil e o checklist de acessos de cada um.
 
-O app usa o banco criptografado em `dados\gelasio_app_db.enc`. O JSON antigo nao e mais usado pelo login quando o banco criptografado existe.
+O app usa o banco criptografado em `dados\gelasio_app_db.enc`. O JSON antigo de usuarios nao foi versionado no GitHub e nao e usado pelo login quando o banco criptografado existe.
 
 Perfis padrao:
 
