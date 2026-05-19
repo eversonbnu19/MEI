@@ -1,0 +1,80 @@
+name: Extrair app principal
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Gelasio_App_Principal_GitHub_Export.zip
+      - .github/workflows/extrair-app-principal.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extrair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: windows-latest
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Extrair pacote do app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = Join-Path $PWD 'Gelasio_App_Principal_GitHub_Export.zip'
+          if (!(Test-Path -LiteralPath $zip)) {
+            throw 'Arquivo Gelasio_App_Principal_GitHub_Export.zip nao encontrado.'
+          }
+
+          $extractRoot = Join-Path $PWD '_github_extract'
+          Remove-Item -LiteralPath $extractRoot -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $extractRoot | Out-Null
+          Expand-Archive -LiteralPath $zip -DestinationPath $extractRoot -Force
+
+          Get-ChildItem -LiteralPath $extractRoot -Force | ForEach-Object {
+            $target = Join-Path $PWD $_.Name
+            if (Test-Path -LiteralPath $target) {
+              Remove-Item -LiteralPath $target -Recurse -Force
+            }
+            Move-Item -LiteralPath $_.FullName -Destination $target
+          }
+
+          Remove-Item -LiteralPath $extractRoot -Recurse -Force
+
+          @'
+          # Gelasio App Principal
+
+          Aplicativo principal Gelasio em HTA, com login, controle de usuarios, perfis de acesso e banco criptografado.
+
+          ## Como abrir
+
+          Execute `Abrir_Gelasio_App_Principal.cmd` no Windows, ou abra diretamente `Gelasio_App_Principal/Gelasio_App_Principal_Login.hta`.
+
+          ## Estrutura
+
+          - `Gelasio_App_Principal/Gelasio_App_Principal_Login.hta`: app principal.
+          - `Gelasio_App_Principal/logo_empresa.png`: logo da empresa.
+          - `Gelasio_App_Principal/dados/gelasio_app_db.enc`: banco criptografado do app.
+          - `Gelasio_App_Principal/README_APP_PRINCIPAL.md`: documentacao do app.
+          - `Gelasio_App_Principal_GitHub_Export.zip`: pacote de backup/exportacao.
+          '@ | Set-Content -LiteralPath 'README.md' -Encoding UTF8
+
+      - name: Commitar arquivos extraidos
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md .gitignore Abrir_Gelasio_App_Principal.cmd Gelasio_App_Principal
+          git status --short
+          if (git diff --cached --quiet) {
+            Write-Host 'Nenhuma alteracao para commit.'
+          } else {
+            git commit -m 'Extrai arquivos do app principal Gelasio'
+            git push
+          }
