@@ -1,0 +1,82 @@
+{
+  "app": "Gelasio App Principal",
+  "version": "1.0",
+  "warning": "Troque as senhas iniciais antes de usar em producao.",
+  "users": [
+    {
+      "username": "admin",
+      "password": "admin123",
+      "name": "Administrador",
+      "role": "Admin completo",
+      "modules": [
+        "dashboard",
+        "movimentacao",
+        "expedicao",
+        "financeiro",
+        "relatorios",
+        "usuarios",
+        "config"
+      ]
+    },
+    {
+      "username": "jessica",
+      "password": "1234",
+      "name": "Jessica",
+      "role": "Movimentacao V1",
+      "modules": [
+        "dashboard",
+        "movimentacao",
+        "relatorios",
+        "config"
+      ]
+    },
+    {
+      "username": "paula",
+      "password": "1234",
+      "name": "Paula",
+      "role": "Movimentacao V2",
+      "modules": [
+        "dashboard",
+        "movimentacao",
+        "relatorios",
+        "config"
+      ]
+    },
+    {
+      "username": "nathan",
+      "password": "1234",
+      "name": "Nathan",
+      "role": "Movimentacao V3",
+      "modules": [
+        "dashboard",
+        "movimentacao",
+        "relatorios",
+        "config"
+      ]
+    },
+    {
+      "username": "expedicao",
+      "password": "exp123",
+      "name": "Expedicao",
+      "role": "Expedicao",
+      "modules": [
+        "dashboard",
+        "expedicao",
+        "relatorios",
+        "config"
+      ]
+    },
+    {
+      "username": "financeiro",
+      "password": "fin123",
+      "name": "Financeiro",
+      "role": "Financeiro",
+      "modules": [
+        "dashboard",
+        "financeiro",
+        "relatorios",
+        "config"
+      ]
+    }
+  ]
+}
