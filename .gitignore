@@ -1,0 +1,5 @@
+Gelasio_App_Principal/Gelasio_App_Principal_usuarios.json
+Gelasio_App_Principal/backups/
+Gelasio_App_Principal/*.tmp
+Gelasio_App_Principal/*.bak
+*.log

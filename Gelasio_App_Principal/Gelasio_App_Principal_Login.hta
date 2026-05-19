@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=9" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>Gelasio - App Principal</title>
+  <HTA:APPLICATION
+    ID="GelasioPrincipal"
+    APPLICATIONNAME="Gelasio App Principal"
+    BORDER="thin"
+    BORDERSTYLE="normal"
+    CAPTION="yes"
+    CONTEXTMENU="no"
+    ICON=""
+    MAXIMIZEBUTTON="yes"
+    MINIMIZEBUTTON="yes"
+    SCROLL="no"
+    SELECTION="no"
+    SINGLEINSTANCE="yes"
+    SYSMENU="yes"
+    VERSION="1.0"
+    WINDOWSTATE="maximize"
+  />
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #182230;
+      background: #f4f6f8;
+    }
+
+    * { box-sizing: border-box; }
+
+    button, input, select {
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+    }
+
+    .hidden { display: none !important; }
+
+    .login-shell {
+      display: table;
+      width: 100%;
+      height: 100%;
+      background: #eef2f5;
+    }
+
+    .login-side,
+    .login-panel-wrap {
+      display: table-cell;
+      vertical-align: middle;
+    }
+
+    .login-side {
+      width: 54%;
+      padding: 64px 72px;
+      color: #fff;
+      background: #12343f;
+    }
+
+    .brand-kicker {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #b7d9df;
+      margin-bottom: 18px;
+    }
+
+    .brand-logo {
+      display: block;
+      width: 440px;
+      height: 242px;
+      margin-bottom: 22px;
+    }
+
+    .brand-logo img {
+      display: block;
+      max-width: 440px;
+      max-height: 242px;
+      border: 0;
+    }
+
+    .brand-title {
+      font-size: 44px;
+      line-height: 1.06;
+      font-weight: 700;
+      margin: 0 0 18px;
+    }
+
+    .brand-copy {
+      width: 78%;
+      font-size: 17px;
+      line-height: 1.55;
+      color: #d9e8eb;
+      margin: 0 0 34px;
+    }
+
+    .metric-row {
+      display: table;
+      width: 100%;
+      max-width: 680px;
+      table-layout: fixed;
+    }
+
+    .metric {
+      display: table-cell;
+      padding-right: 18px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 28px;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .metric span {
+      display: block;
+      font-size: 13px;
+      color: #b7d9df;
+    }
+
+    .login-panel-wrap {
+      width: 46%;
+      padding: 48px;
+      background: #f4f6f8;
+    }
+
+    .login-panel {
+      width: 420px;
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 34px;
+      border: 1px solid #dbe2e8;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 16px 42px rgba(23, 37, 52, 0.10);
+    }
+
+    .panel-title {
+      margin: 0 0 8px;
+      font-size: 24px;
+      font-weight: 700;
+      color: #132734;
+    }
+
+    .panel-subtitle {
+      margin: 0 0 28px;
+      color: #617080;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #344453;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      height: 42px;
+      padding: 9px 11px;
+      border: 1px solid #ccd6df;
+      border-radius: 6px;
+      background: #fff;
+      color: #182230;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: #127b86;
+      box-shadow: 0 0 0 3px rgba(18, 123, 134, 0.12);
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .ghost-btn,
+    .danger-btn {
+      height: 38px;
+      min-width: 96px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .primary-btn {
+      width: 100%;
+      height: 44px;
+      color: #fff;
+      border: 1px solid #0b6873;
+      background: #0f7f89;
+    }
+
+    .primary-btn:hover { background: #0b6873; }
+
+    .secondary-btn {
+      color: #14303c;
+      border: 1px solid #bcc9d3;
+      background: #fff;
+    }
+
+    .secondary-btn:hover { background: #f3f6f8; }
+
+    .ghost-btn {
+      min-width: 0;
+      border: 0;
+      color: #45606f;
+      background: transparent;
+    }
+
+    .ghost-btn:hover { color: #0f6973; }
+
+    .danger-btn {
+      color: #fff;
+      border: 1px solid #a33b3b;
+      background: #b84545;
+    }
+
+    .danger-btn:hover { background: #9f3535; }
+
+    .login-alert {
+      min-height: 20px;
+      margin: 12px 0 0;
+      color: #b84545;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .login-note {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid #edf1f4;
+      color: #6a7784;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .app-shell {
+      display: block;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #f4f6f8;
+    }
+
+    .sidebar {
+      display: block;
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 280px;
+      height: auto;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-bottom: 72px;
+      background: #15323d;
+      color: #e8f3f5;
+      border-right: 1px solid #0e252d;
+    }
+
+    .sidebar-head {
+      padding: 24px 22px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .app-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .sidebar-logo {
+      display: block;
+      width: 214px;
+      min-height: 118px;
+      margin-bottom: 12px;
+    }
+
+    .sidebar-logo img {
+      display: block;
+      max-width: 214px;
+      max-height: 118px;
+      border: 0;
+    }
+
+    .user-chip {
+      display: block;
+      min-height: 38px;
+      padding: 9px 11px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.08);
+      color: #d6e9ed;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .user-chip strong {
+      display: block;
+      color: #fff;
+      font-size: 14px;
+      margin-bottom: 1px;
+    }
+
+    .nav {
+      padding: 16px 10px;
+    }
+
+    .nav button {
+      display: block;
+      width: 100%;
+      min-height: 42px;
+      margin-bottom: 4px;
+      padding: 10px 12px;
+      border: 0;
+      border-radius: 6px;
+      text-align: left;
+      color: #d6e9ed;
+      background: transparent;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .nav button:hover,
+    .nav button.active {
+      color: #fff;
+      background: rgba(255,255,255,0.12);
+    }
+
+    .nav button.disabled {
+      color: rgba(214,233,237,0.35);
+      cursor: default;
+    }
+
+    .sidebar-foot {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      padding: 14px 18px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      background: #15323d;
+    }
+
+    .sidebar-foot button {
+      width: 100%;
+      color: #d6e9ed;
+    }
+
+    .content {
+      display: block;
+      position: absolute;
+      left: 280px;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      height: auto;
+      overflow-y: auto;
+      overflow-x: auto;
+      -ms-overflow-y: auto;
+      -ms-overflow-x: auto;
+    }
+
+    .topbar {
+      height: 72px;
+      padding: 17px 28px;
+      background: #fff;
+      border-bottom: 1px solid #dde4ea;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+      color: #132734;
+    }
+
+    .topbar p {
+      margin: 4px 0 0;
+      color: #607080;
+      font-size: 13px;
+    }
+
+    .main {
+      padding: 26px 28px 34px;
+      min-width: 780px;
+    }
+
+    .grid {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      border-spacing: 16px;
+      margin: -16px;
+    }
+
+    .grid-row { display: table-row; }
+
+    .grid-col {
+      display: table-cell;
+      vertical-align: top;
+    }
+
+    .card {
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 22px rgba(23, 37, 52, 0.05);
+    }
+
+    .card-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid #edf1f4;
+    }
+
+    .card-head h2,
+    .section h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #132734;
+    }
+
+    .card-head p,
+    .section p {
+      margin: 5px 0 0;
+      color: #637383;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .card-body {
+      padding: 18px 20px 20px;
+    }
+
+    .stat-list {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      border-spacing: 10px 0;
+      margin-left: -10px;
+      margin-right: -10px;
+    }
+
+    .stat {
+      display: table-cell;
+      padding: 16px;
+      border-radius: 8px;
+      background: #f6f8fa;
+      border: 1px solid #e5ebf0;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 26px;
+      color: #12343f;
+      margin-bottom: 4px;
+    }
+
+    .stat span {
+      color: #667684;
+      font-size: 13px;
+    }
+
+    .module-grid {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      border-spacing: 12px;
+      margin: -12px;
+    }
+
+    .module-card {
+      display: table-cell;
+      vertical-align: top;
+      min-height: 140px;
+      padding: 16px;
+      border: 1px solid #dde4ea;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .module-card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      color: #132734;
+    }
+
+    .module-card p {
+      min-height: 42px;
+      margin: 0 0 14px;
+      color: #647584;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .module-card .actions {
+      white-space: nowrap;
+    }
+
+    .module-card.locked {
+      opacity: 0.55;
+      background: #f8fafb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px 9px;
+      border-bottom: 1px solid #edf1f4;
+      text-align: left;
+      font-size: 13px;
+      color: #334452;
+    }
+
+    th {
+      color: #526473;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      background: #f8fafb;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0d5961;
+      background: #dff1f3;
+    }
+
+    .pill.warn {
+      color: #825400;
+      background: #fff0c2;
+    }
+
+    .pill.bad {
+      color: #8d2f2f;
+      background: #fde1e1;
+    }
+
+    .tab-row {
+      margin-bottom: 16px;
+      border-bottom: 1px solid #dde4ea;
+      white-space: nowrap;
+    }
+
+    .tab-row button {
+      height: 42px;
+      min-width: 132px;
+      margin-right: 4px;
+      padding: 0 16px;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      background: transparent;
+      color: #506270;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .tab-row button.active {
+      color: #0f6973;
+      border-bottom-color: #0f7f89;
+    }
+
+    .form-grid {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+      border-spacing: 14px 0;
+      margin-left: -14px;
+      margin-right: -14px;
+    }
+
+    .form-col {
+      display: table-cell;
+      vertical-align: top;
+    }
+
+    .module-checks {
+      padding: 8px 10px;
+      border: 1px solid #d8e0e7;
+      border-radius: 6px;
+      background: #fbfcfd;
+    }
+
+    .module-checks label {
+      display: block;
+      min-height: 28px;
+      padding: 5px 0;
+      color: #334452;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .module-checks input {
+      margin-right: 7px;
+      vertical-align: middle;
+    }
+
+    .inline-actions button {
+      height: 32px;
+      min-width: 70px;
+      margin-right: 6px;
+    }
+
+    .notice {
+      margin-top: 14px;
+      padding: 12px 13px;
+      border-radius: 6px;
+      border: 1px solid #d8e0e7;
+      background: #fbfcfd;
+      color: #5f7080;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .notice.strong {
+      border-color: #bfe2e6;
+      color: #0d5961;
+      background: #effafb;
+    }
+
+    .path-box {
+      width: 100%;
+      min-height: 42px;
+      padding: 11px 12px;
+      border-radius: 6px;
+      border: 1px solid #d8e0e7;
+      background: #f8fafb;
+      color: #334452;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .button-row {
+      margin-top: 14px;
+    }
+
+    .button-row button {
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .section {
+      margin-bottom: 18px;
+    }
+
+    .empty {
+      padding: 16px;
+      border: 1px dashed #ccd6df;
+      border-radius: 8px;
+      color: #657585;
+      background: #fbfcfd;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div id="loginScreen" class="screen login-shell">
+    <div class="login-side">
+      <div class="brand-logo">
+        <img src="logo_empresa.png" alt="Gelasio" />
+      </div>
+      <div class="brand-kicker">Gelasio Painel Cestas</div>
+      <h1 class="brand-title">Um app principal para todos os perfis.</h1>
+      <p class="brand-copy">Entrada unica com login, permissoes por usuario e acesso central aos dados, status, relatorios e modulos de operacao.</p>
+      <div class="metric-row">
+        <div class="metric">
+          <strong id="loginMetricUsers">6</strong>
+          <span>usuarios iniciais</span>
+        </div>
+        <div class="metric">
+          <strong id="loginMetricModules">6</strong>
+          <span>modulos controlados</span>
+        </div>
+        <div class="metric">
+          <strong id="loginMetricVersion">1.0</strong>
+          <span>versao principal</span>
+        </div>
+      </div>
+    </div>
+    <div class="login-panel-wrap">
+      <div class="login-panel">
+        <h2 class="panel-title">Entrar no sistema</h2>
+        <p class="panel-subtitle">Use o usuario e senha do perfil. O administrador pode revisar o cadastro em Configuracoes &gt; Usuarios.</p>
+        <form id="loginForm">
+          <div class="field">
+            <label for="loginUser">Usuario</label>
+            <input id="loginUser" type="text" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="loginPassword">Senha</label>
+            <input id="loginPassword" type="password" autocomplete="off" />
+          </div>
+          <button class="primary-btn" type="submit">Entrar</button>
+          <div id="loginAlert" class="login-alert"></div>
+        </form>
+        <div class="login-note">
+          Primeira entrada: admin / admin123. Troque as senhas antes de usar em producao.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="appScreen" class="screen app-shell hidden" style="display:none;">
+    <div class="sidebar">
+      <div class="sidebar-head">
+        <div class="sidebar-logo">
+          <img src="logo_empresa.png" alt="Gelasio" />
+        </div>
+        <div class="app-name">Gelasio Principal</div>
+        <div class="user-chip">
+          <strong id="currentUserName">Usuario</strong>
+          <span id="currentUserRole">Perfil</span>
+        </div>
+      </div>
+      <div id="nav" class="nav"></div>
+      <div class="sidebar-foot">
+        <button class="ghost-btn" id="logoutButton" type="button">Sair</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="topbar">
+        <h1 id="pageTitle">Painel geral</h1>
+        <p id="pageSubtitle">Visao central do app principal.</p>
+      </div>
+      <div class="main" id="main"></div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var APP_VERSION = "1.0";
+    var fso = null;
+    var shell = null;
+    var appFile = "";
+    var appDir = "";
+    var appDataDir = "";
+    var dbFile = "";
+    var legacyUserFile = "";
+    var legacyRoot = "";
+    var dataFile = "";
+    var statusDir = "";
+    var currentUser = null;
+    var activeView = "dashboard";
+    var activeConfigTab = "database";
+    var editingUserIndex = -1;
+    var editingProfileIndex = 0;
+    var DATABASE_HEADER = "GELASIO-DB-V1";
+    var DATABASE_KEY = "Gelasio-App-Principal-2026";
+
+    var MODULES = [
+      { id: "dashboard", title: "Painel geral", subtitle: "Resumo de dados, status e atalhos principais.", legacy: "" },
+      { id: "movimentacao", title: "Movimentacao", subtitle: "Entrada, saida e acompanhamento operacional.", legacy: "01_Usuario_V1_Movimentacao_Gestao.hta" },
+      { id: "expedicao", title: "Expedicao", subtitle: "Controle de separacao e expedicao.", legacy: "04_Usuario_Expedicao_Gestao.hta" },
+      { id: "financeiro", title: "Financeiro", subtitle: "Itens faturados e conferencias financeiras.", legacy: "06_Usuario_Financeiro_Faturado_Gestao.hta" },
+      { id: "relatorios", title: "Relatorios", subtitle: "Relatorios consolidados do painel de cestas.", legacy: "Gelasio_Relatorios_Painel_Cestas_V26.hta" },
+      { id: "config", title: "Configuracoes", subtitle: "Caminhos, arquivos de dados e diagnostico.", legacy: "" }
+    ];
+
+    var DEFAULT_PROFILES = [
+      { id: "admin", name: "Administrador", dashboardScope: "geral", modules: ["dashboard","movimentacao","expedicao","financeiro","relatorios","config"] },
+      { id: "v1", name: "Usuario V1", dashboardScope: "usuario", modules: ["dashboard","movimentacao","relatorios"] },
+      { id: "v2", name: "Usuario V2", dashboardScope: "usuario", modules: ["dashboard","movimentacao","relatorios"] },
+      { id: "v3", name: "Usuario V3", dashboardScope: "usuario", modules: ["dashboard","movimentacao","relatorios"] },
+      { id: "expedicao", name: "Expedicao", dashboardScope: "usuario", modules: ["dashboard","expedicao","relatorios"] },
+      { id: "financeiro", name: "Financeiro", dashboardScope: "usuario", modules: ["dashboard","financeiro","relatorios"] }
+    ];
+
+    var DEFAULT_USERS = [
+      {
+        username: "admin",
+        password: "admin123",
+        name: "Administrador",
+        role: "Administrador",
+        profileId: "admin",
+        modules: ["dashboard","movimentacao","expedicao","financeiro","relatorios","config"]
+      },
+      {
+        username: "jessica",
+        password: "1234",
+        name: "Jessica",
+        role: "Usuario V1",
+        profileId: "v1",
+        modules: ["dashboard","movimentacao","relatorios"]
+      },
+      {
+        username: "paula",
+        password: "1234",
+        name: "Paula",
+        role: "Usuario V2",
+        profileId: "v2",
+        modules: ["dashboard","movimentacao","relatorios"]
+      },
+      {
+        username: "nathan",
+        password: "1234",
+        name: "Nathan",
+        role: "Usuario V3",
+        profileId: "v3",
+        modules: ["dashboard","movimentacao","relatorios"]
+      },
+      {
+        username: "expedicao",
+        password: "exp123",
+        name: "Expedicao",
+        role: "Expedicao",
+        profileId: "expedicao",
+        modules: ["dashboard","expedicao","relatorios"]
+      },
+      {
+        username: "financeiro",
+        password: "fin123",
+        name: "Financeiro",
+        role: "Financeiro",
+        profileId: "financeiro",
+        modules: ["dashboard","financeiro","relatorios"]
+      }
+    ];
+
+    var users = clone(DEFAULT_USERS);
+    var profiles = clone(DEFAULT_PROFILES);
+
+    window.onload = function () {
+      setupEnvironment();
+      loadDatabase();
+      ensureDatabase();
+      document.getElementById("loginMetricUsers").innerHTML = users.length;
+      document.getElementById("loginMetricModules").innerHTML = MODULES.length - 1;
+      document.getElementById("loginMetricVersion").innerHTML = APP_VERSION;
+      document.getElementById("loginForm").onsubmit = handleLogin;
+      document.getElementById("logoutButton").onclick = logout;
+      document.getElementById("loginUser").focus();
+    };
+
+    function setupEnvironment() {
+      try {
+        fso = new ActiveXObject("Scripting.FileSystemObject");
+        shell = new ActiveXObject("WScript.Shell");
+      } catch (e) {
+        setLoginAlert("Ative scripts/ActiveX para executar este HTA local.");
+        return;
+      }
+
+      appFile = decodePath(window.location.pathname);
+      appDir = fso.GetParentFolderName(appFile);
+      appDataDir = combine(appDir, "dados");
+      dbFile = combine(appDataDir, "gelasio_app_db.enc");
+      legacyUserFile = combine(appDir, "Gelasio_App_Principal_usuarios.json");
+      ensureDataDirectory();
+      legacyRoot = findLegacyRoot();
+      dataFile = combine(legacyRoot, "dados\\painel_cestas_data.json");
+      statusDir = combine(legacyRoot, "painel_cestas_status");
+    }
+
+    function decodePath(path) {
+      var p = unescape(path || "");
+      if (p.charAt(0) == "/" && p.charAt(2) == ":") {
+        p = p.substring(1);
+      }
+      return p.replace(/\//g, "\\");
+    }
+
+    function combine(a, b) {
+      if (!a) return b;
+      if (a.charAt(a.length - 1) == "\\") return a + b;
+      return a + "\\" + b;
+    }
+
+    function findLegacyRoot() {
+      if (!fso) return appDir;
+
+      var candidates = [];
+      candidates.push(appDir);
+      candidates.push(combine(appDir, "Gelasio_Painel_Cestas"));
+
+      try {
+        var parent = fso.GetParentFolderName(appDir);
+        candidates.push(parent);
+        candidates.push(combine(parent, "Gelasio_Painel_Cestas"));
+      } catch (e1) {}
+
+      for (var i = 0; i < candidates.length; i++) {
+        if (candidates[i] && fso.FolderExists(candidates[i])) {
+          if (fso.FileExists(combine(candidates[i], "dados\\painel_cestas_data.json")) ||
+              fso.FileExists(combine(candidates[i], "painel_cestas_path_shared.txt")) ||
+              fso.FileExists(combine(candidates[i], "05_Usuario_Admin_Completo.hta"))) {
+            return candidates[i];
+          }
+        }
+      }
+
+      return appDir;
+    }
+
+    function ensureDataDirectory() {
+      if (!fso || !appDataDir) return;
+      if (!fso.FolderExists(appDataDir)) {
+        fso.CreateFolder(appDataDir);
+      }
+    }
+
+    function userFilePath() {
+      return legacyUserFile;
+    }
+
+    function databasePath() {
+      return dbFile;
+    }
+
+    function loadDatabase() {
+      if (!fso) return;
+      ensureDataDirectory();
+
+      if (fso.FileExists(dbFile)) {
+        try {
+          var db = parseJson(decryptDatabase(readText(dbFile)));
+          if (db && db.users && db.users.length) {
+            profiles = normalizeProfiles(db.profiles || DEFAULT_PROFILES);
+            users = normalizeUsers(db.users);
+            applyProfilePermissionsToUsers();
+            if (!db.profiles || !db.profiles.length) saveDatabase("Atualizacao do banco com perfis");
+            return;
+          }
+        } catch (e1) {
+          setLoginAlert("Banco de dados criptografado invalido. Usando usuarios padrao.");
+          return;
+        }
+      }
+
+      migrateLegacyUsers();
+    }
+
+    function migrateLegacyUsers() {
+      if (!fso || !legacyUserFile || !fso.FileExists(legacyUserFile)) return;
+      try {
+        var parsed = parseJson(readText(legacyUserFile));
+        if (parsed && parsed.users && parsed.users.length) {
+          profiles = normalizeProfiles(DEFAULT_PROFILES);
+          users = normalizeUsers(parsed.users);
+          applyProfilePermissionsToUsers();
+          saveDatabase("Migracao do cadastro JSON antigo");
+        }
+      } catch (e2) {
+        setLoginAlert("Arquivo antigo de usuarios invalido. Usando usuarios padrao.");
+      }
+    }
+
+    function ensureDatabase() {
+      if (!fso) return;
+      ensureDataDirectory();
+      if (fso.FileExists(dbFile)) return;
+      saveDatabase("Criacao inicial do banco criptografado");
+    }
+
+    function saveDatabase(reason) {
+      if (!fso) return false;
+      ensureDataDirectory();
+      var payload = {
+        app: "Gelasio App Principal",
+        version: APP_VERSION,
+        encrypted: true,
+        updatedAt: new Date().toISOString ? new Date().toISOString() : String(new Date()),
+        reason: reason || "Atualizacao do banco",
+        profiles: normalizeProfiles(profiles),
+        users: normalizeUsers(users)
+      };
+      try {
+        writeText(dbFile, encryptDatabase(stringify(payload)));
+        return true;
+      } catch (e3) {
+        alert("Nao foi possivel salvar o banco de dados criptografado.");
+        return false;
+      }
+    }
+
+    function normalizeUsers(input) {
+      var output = [];
+      for (var i = 0; i < input.length; i++) {
+        var u = input[i] || {};
+        output.push({
+          username: trim(u.username || ""),
+          password: String(u.password || ""),
+          name: trim(u.name || u.username || ""),
+          role: trim(u.role || profileName(u.profileId) || "Usuario"),
+          profileId: normalizeProfileId(u.profileId || profileIdFromRole(u.role)),
+          modules: normalizeModules(u.modules || profileModules(u.profileId))
+        });
+      }
+      return output;
+    }
+
+    function normalizeProfiles(input) {
+      var output = [];
+      for (var i = 0; i < input.length; i++) {
+        var p = input[i] || {};
+        output.push({
+          id: normalizeProfileId(p.id || profileIdFromRole(p.name)),
+          name: trim(p.name || p.id || "Perfil"),
+          dashboardScope: p.dashboardScope == "geral" ? "geral" : "usuario",
+          modules: normalizeModules(p.modules || [])
+        });
+      }
+      for (var j = 0; j < DEFAULT_PROFILES.length; j++) {
+        if (findProfileIndex(DEFAULT_PROFILES[j].id, output) < 0) {
+          output.push(clone(DEFAULT_PROFILES[j]));
+        }
+      }
+      return output;
+    }
+
+    function normalizeProfileId(value) {
+      var id = trim(value || "").toLowerCase();
+      if (id == "administrador" || id == "admin completo") return "admin";
+      if (id == "usuario v1" || id == "movimentacao v1") return "v1";
+      if (id == "usuario v2" || id == "movimentacao v2") return "v2";
+      if (id == "usuario v3" || id == "movimentacao v3") return "v3";
+      if (id == "expedição") return "expedicao";
+      if (!id) return "v1";
+      return id.replace(/\s+/g, "_");
+    }
+
+    function profileIdFromRole(role) {
+      var text = trim(role || "").toLowerCase();
+      if (text.indexOf("admin") >= 0) return "admin";
+      if (text.indexOf("v1") >= 0) return "v1";
+      if (text.indexOf("v2") >= 0) return "v2";
+      if (text.indexOf("v3") >= 0) return "v3";
+      if (text.indexOf("exped") >= 0) return "expedicao";
+      if (text.indexOf("financ") >= 0) return "financeiro";
+      return "v1";
+    }
+
+    function findProfileIndex(profileId, list) {
+      var source = list || profiles;
+      for (var i = 0; i < source.length; i++) {
+        if (source[i].id == profileId) return i;
+      }
+      return -1;
+    }
+
+    function profileById(profileId) {
+      var index = findProfileIndex(profileId);
+      if (index >= 0) return profiles[index];
+      return profiles[0] || DEFAULT_PROFILES[0];
+    }
+
+    function profileName(profileId) {
+      var p = profileById(normalizeProfileId(profileId));
+      return p ? p.name : "";
+    }
+
+    function profileModules(profileId) {
+      var p = profileById(normalizeProfileId(profileId));
+      return p ? p.modules : ["dashboard"];
+    }
+
+    function applyProfilePermissionsToUsers() {
+      for (var i = 0; i < users.length; i++) {
+        var profile = profileById(users[i].profileId);
+        users[i].role = profile.name;
+        users[i].modules = normalizeModules(profile.modules);
+      }
+    }
+
+    function normalizeModules(modules) {
+      var result = [];
+      var hasDashboard = false;
+      for (var i = 0; i < modules.length; i++) {
+        if (modules[i] == "usuarios") continue;
+        if (modules[i] == "dashboard") hasDashboard = true;
+        if (moduleExists(modules[i]) && indexOf(result, modules[i]) < 0) result.push(modules[i]);
+      }
+      if (!hasDashboard) result.unshift("dashboard");
+      return result;
+    }
+
+    function moduleExists(moduleId) {
+      for (var i = 0; i < MODULES.length; i++) {
+        if (MODULES[i].id == moduleId) return true;
+      }
+      return false;
+    }
+
+    function indexOf(list, value) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i] == value) return i;
+      }
+      return -1;
+    }
+
+    function readText(path) {
+      var file = fso.OpenTextFile(path, 1, false, -2);
+      var text = file.ReadAll();
+      file.Close();
+      return text;
+    }
+
+    function writeText(path, text) {
+      var file = fso.OpenTextFile(path, 2, true, -2);
+      file.Write(text);
+      file.Close();
+    }
+
+    function parseJson(text) {
+      if (window.JSON && JSON.parse) return JSON.parse(text);
+      return eval("(" + text + ")");
+    }
+
+    function stringify(obj) {
+      if (window.JSON && JSON.stringify) return JSON.stringify(obj, null, 2);
+      return "";
+    }
+
+    function encryptDatabase(plainText) {
+      var bytes = utf8Encode(plainText);
+      var cipher = rc4(bytes, DATABASE_KEY);
+      return DATABASE_HEADER + "\r\n" + base64Encode(cipher);
+    }
+
+    function decryptDatabase(text) {
+      var raw = String(text || "");
+      if (raw.indexOf(DATABASE_HEADER) !== 0) {
+        throw new Error("Banco sem cabecalho valido.");
+      }
+      var payload = raw.substring(DATABASE_HEADER.length).replace(/^\s+|\s+$/g, "");
+      var cipher = base64Decode(payload);
+      return utf8Decode(rc4(cipher, DATABASE_KEY));
+    }
+
+    function rc4(input, key) {
+      var s = [];
+      var j = 0;
+      var x;
+      var output = "";
+      for (var i = 0; i < 256; i++) s[i] = i;
+      for (i = 0; i < 256; i++) {
+        j = (j + s[i] + key.charCodeAt(i % key.length)) % 256;
+        x = s[i];
+        s[i] = s[j];
+        s[j] = x;
+      }
+      i = 0;
+      j = 0;
+      for (var y = 0; y < input.length; y++) {
+        i = (i + 1) % 256;
+        j = (j + s[i]) % 256;
+        x = s[i];
+        s[i] = s[j];
+        s[j] = x;
+        output += String.fromCharCode(input.charCodeAt(y) ^ s[(s[i] + s[j]) % 256]);
+      }
+      return output;
+    }
+
+    function utf8Encode(text) {
+      return unescape(encodeURIComponent(String(text || "")));
+    }
+
+    function utf8Decode(bytes) {
+      try {
+        return decodeURIComponent(escape(bytes));
+      } catch (e) {
+        return bytes;
+      }
+    }
+
+    function base64Encode(input) {
+      var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      var output = "";
+      var i = 0;
+      while (i < input.length) {
+        var chr1 = input.charCodeAt(i++);
+        var chr2 = input.charCodeAt(i++);
+        var chr3 = input.charCodeAt(i++);
+        var enc1 = chr1 >> 2;
+        var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+        var enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+        var enc4 = chr3 & 63;
+        if (isNaN(chr2)) {
+          enc3 = 64;
+          enc4 = 64;
+        } else if (isNaN(chr3)) {
+          enc4 = 64;
+        }
+        output += chars.charAt(enc1) + chars.charAt(enc2) + chars.charAt(enc3) + chars.charAt(enc4);
+      }
+      return output;
+    }
+
+    function base64Decode(input) {
+      var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+      var output = "";
+      var i = 0;
+      input = String(input || "").replace(/[^A-Za-z0-9\+\/\=]/g, "");
+      while (i < input.length) {
+        var enc1 = chars.indexOf(input.charAt(i++));
+        var enc2 = chars.indexOf(input.charAt(i++));
+        var enc3 = chars.indexOf(input.charAt(i++));
+        var enc4 = chars.indexOf(input.charAt(i++));
+        var chr1 = (enc1 << 2) | (enc2 >> 4);
+        var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+        var chr3 = ((enc3 & 3) << 6) | enc4;
+        output += String.fromCharCode(chr1);
+        if (enc3 != 64) output += String.fromCharCode(chr2);
+        if (enc4 != 64) output += String.fromCharCode(chr3);
+      }
+      return output;
+    }
+
+    function clone(obj) {
+      if (window.JSON && JSON.stringify) return JSON.parse(JSON.stringify(obj));
+      var copy = [];
+      for (var i = 0; i < obj.length; i++) {
+        copy.push(obj[i]);
+      }
+      return copy;
+    }
+
+    function handleLogin() {
+      var username = trim(document.getElementById("loginUser").value).toLowerCase();
+      var password = document.getElementById("loginPassword").value;
+      var found = null;
+
+      for (var i = 0; i < users.length; i++) {
+        if ((users[i].username || "").toLowerCase() == username && users[i].password == password) {
+          found = users[i];
+          break;
+        }
+      }
+
+      if (!found) {
+        setLoginAlert("Usuario ou senha invalidos.");
+        return false;
+      }
+
+      currentUser = found;
+      setLoginAlert("");
+      document.getElementById("loginPassword").value = "";
+      showApp();
+      return false;
+    }
+
+    function showApp() {
+      document.getElementById("currentUserName").innerHTML = escapeHtml(currentUser.name || currentUser.username);
+      document.getElementById("currentUserRole").innerHTML = escapeHtml(currentUser.role || "");
+      renderNav();
+      selectView("dashboard");
+      showElement("loginScreen", false);
+      showElement("appScreen", true);
+    }
+
+    function logout() {
+      currentUser = null;
+      activeView = "dashboard";
+      showElement("appScreen", false);
+      showElement("loginScreen", true);
+      document.getElementById("loginUser").focus();
+    }
+
+    function showElement(id, visible) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (visible) {
+        el.className = el.className.replace(/\bhidden\b/g, "");
+        el.style.display = id == "appScreen" ? "block" : "table";
+      } else {
+        if (el.className.indexOf("hidden") < 0) el.className += " hidden";
+        el.style.display = "none";
+      }
+    }
+
+    function renderNav() {
+      var html = "";
+      for (var i = 0; i < MODULES.length; i++) {
+        var module = MODULES[i];
+        var allowed = hasModule(module.id);
+        html += '<button id="nav_' + module.id + '" type="button" class="' + (allowed ? "" : "disabled") + '">' + escapeHtml(module.title) + '</button>';
+      }
+      document.getElementById("nav").innerHTML = html;
+
+      for (var j = 0; j < MODULES.length; j++) {
+        bindNavButton(MODULES[j].id);
+      }
+    }
+
+    function bindNavButton(moduleId) {
+      var btn = document.getElementById("nav_" + moduleId);
+      if (!btn) return;
+      btn.onclick = function () {
+        selectView(moduleId);
+        return false;
+      };
+    }
+
+    function hasModule(moduleId) {
+      if (!currentUser || !currentUser.modules) return false;
+      for (var i = 0; i < currentUser.modules.length; i++) {
+        if (currentUser.modules[i] == moduleId) return true;
+      }
+      return false;
+    }
+
+    function selectView(viewId) {
+      if (!hasModule(viewId)) return;
+      activeView = viewId;
+      updateNavState();
+
+      var module = getModule(viewId);
+      document.getElementById("pageTitle").innerHTML = escapeHtml(module.title);
+      document.getElementById("pageSubtitle").innerHTML = escapeHtml(module.subtitle);
+
+      if (viewId == "dashboard") renderDashboard();
+      else if (viewId == "config") renderConfig();
+      else renderModule(module);
+    }
+
+    function updateNavState() {
+      for (var i = 0; i < MODULES.length; i++) {
+        var m = MODULES[i];
+        var btn = document.getElementById("nav_" + m.id);
+        if (!btn) continue;
+        var cls = hasModule(m.id) ? "" : "disabled";
+        if (m.id == activeView) cls += " active";
+        btn.className = trim(cls);
+      }
+    }
+
+    function getModule(moduleId) {
+      for (var i = 0; i < MODULES.length; i++) {
+        if (MODULES[i].id == moduleId) return MODULES[i];
+      }
+      return MODULES[0];
+    }
+
+    function renderDashboard() {
+      var summary = readDataSummary();
+      var status = readStatusFiles();
+      var html = "";
+
+      html += '<div class="grid">';
+      html += '<div class="grid-row">';
+      html += '<div class="grid-col" style="width: 66%;">';
+      html += '<div class="card"><div class="card-head"><h2>Resumo</h2><p>Leitura automatica dos arquivos encontrados ao lado do app principal.</p></div><div class="card-body">';
+      html += '<div class="stat-list">';
+      html += '<div class="stat"><strong>' + summary.totalKeys + '</strong><span>grupos no JSON</span></div>';
+      html += '<div class="stat"><strong>' + summary.totalItems + '</strong><span>registros estimados</span></div>';
+      html += '<div class="stat"><strong>' + status.length + '</strong><span>status de usuarios</span></div>';
+      html += '</div>';
+      html += '<div class="button-row">';
+      html += '<button class="secondary-btn" type="button" onclick="openFolder(legacyRoot)">Abrir pasta do painel</button>';
+      html += '<button class="secondary-btn" type="button" onclick="reloadCurrent()">Atualizar</button>';
+      html += '</div>';
+      html += '</div></div>';
+      html += '</div>';
+      html += '<div class="grid-col" style="width: 34%;">';
+      html += renderHealthCard(summary, status);
+      html += '</div>';
+      html += '</div>';
+      html += '</div>';
+
+      html += '<div class="section" style="margin-top: 26px;"><h2>Modulos disponiveis</h2><p>O acesso aparece conforme o perfil logado.</p></div>';
+      html += renderModuleGrid();
+      html += '<div class="section" style="margin-top: 26px;"><h2>Status recentes</h2></div>';
+      html += renderStatusTable(status);
+
+      document.getElementById("main").innerHTML = html;
+    }
+
+    function renderHealthCard(summary, status) {
+      var dataStatus = summary.exists ? '<span class="pill">Dados encontrados</span>' : '<span class="pill bad">Dados nao encontrados</span>';
+      var statusState = status.length ? '<span class="pill">Status encontrado</span>' : '<span class="pill warn">Sem status</span>';
+
+      var html = '<div class="card"><div class="card-head"><h2>Diagnostico</h2><p>Conferencia rapida dos arquivos principais.</p></div><div class="card-body">';
+      html += '<table><tbody>';
+      html += '<tr><td>Arquivo de dados</td><td>' + dataStatus + '</td></tr>';
+      html += '<tr><td>Pasta de status</td><td>' + statusState + '</td></tr>';
+      html += '<tr><td>Usuarios locais</td><td><span class="pill">' + users.length + '</span></td></tr>';
+      html += '</tbody></table>';
+      html += '</div></div>';
+      return html;
+    }
+
+    function renderModuleGrid() {
+      var visible = [];
+      for (var i = 0; i < MODULES.length; i++) {
+        if (MODULES[i].id != "dashboard") visible.push(MODULES[i]);
+      }
+
+      var html = '<div class="module-grid">';
+      for (var j = 0; j < visible.length; j++) {
+        if (j % 3 == 0) {
+          if (j > 0) html += '</div>';
+          html += '<div class="grid-row">';
+        }
+        var m = visible[j];
+        var allowed = hasModule(m.id);
+        html += '<div class="module-card ' + (allowed ? "" : "locked") + '">';
+        html += '<h3>' + escapeHtml(m.title) + '</h3>';
+        html += '<p>' + escapeHtml(m.subtitle) + '</p>';
+        html += '<div class="actions">';
+        if (allowed) {
+          html += '<button class="secondary-btn" type="button" onclick="selectView(\'' + m.id + '\')">Abrir</button>';
+        } else {
+          html += '<span class="pill warn">Sem acesso</span>';
+        }
+        html += '</div></div>';
+      }
+      html += '</div></div>';
+      return html;
+    }
+
+    function renderModule(module) {
+      var legacyPath = module.legacy ? combine(legacyRoot, module.legacy) : "";
+      var exists = legacyPath && fso && fso.FileExists(legacyPath);
+      var html = "";
+
+      html += '<div class="card"><div class="card-head"><h2>' + escapeHtml(module.title) + '</h2><p>' + escapeHtml(module.subtitle) + '</p></div><div class="card-body">';
+      html += '<p class="empty">Este app principal ja controla o acesso por login. Para manter a operacao atual sem duplicar atalhos, use o botao abaixo enquanto as telas antigas sao migradas para dentro deste HTA unico.</p>';
+      html += '<div class="section"><h2>Arquivo legado vinculado</h2>';
+      html += '<div class="path-box">' + escapeHtml(legacyPath || "Nao definido") + '</div></div>';
+      html += '<div class="button-row">';
+      if (exists) {
+        html += '<button class="primary-btn" style="width:auto;" type="button" onclick="openLegacy(\'' + module.id + '\')">Abrir modulo</button>';
+      } else {
+        html += '<button class="secondary-btn" type="button" onclick="openFolder(legacyRoot)">Abrir pasta</button>';
+      }
+      html += '<button class="secondary-btn" type="button" onclick="selectView(\'dashboard\')">Voltar ao painel</button>';
+      html += '</div>';
+      html += '</div></div>';
+
+      document.getElementById("main").innerHTML = html;
+    }
+
+    function renderUsers() {
+      activeConfigTab = "users";
+      renderConfig();
+    }
+
+    function renderConfig() {
+      var summary = readDataSummary();
+      var html = "";
+      html += '<div class="card"><div class="card-head"><h2>Configuracoes</h2><p>Banco de dados criptografado, usuarios e caminhos do app.</p></div><div class="card-body">';
+      html += renderConfigTabs();
+      if (activeConfigTab == "users") {
+        html += renderUsersConfigTab();
+      } else if (activeConfigTab == "profiles") {
+        html += renderProfilesConfigTab();
+      } else {
+        html += renderDatabaseConfigTab(summary);
+      }
+      html += '</div></div>';
+      document.getElementById("main").innerHTML = html;
+    }
+
+    function renderConfigTabs() {
+      var html = '<div class="tab-row">';
+      html += '<button type="button" class="' + (activeConfigTab == "database" ? "active" : "") + '" onclick="selectConfigTab(\'database\')">Banco de dados</button>';
+      html += '<button type="button" class="' + (activeConfigTab == "users" ? "active" : "") + '" onclick="selectConfigTab(\'users\')">Usuarios</button>';
+      html += '<button type="button" class="' + (activeConfigTab == "profiles" ? "active" : "") + '" onclick="selectConfigTab(\'profiles\')">Perfil</button>';
+      html += '</div>';
+      return html;
+    }
+
+    function selectConfigTab(tabId) {
+      activeConfigTab = tabId == "users" || tabId == "profiles" ? tabId : "database";
+      renderConfig();
+    }
+
+    function renderDatabaseConfigTab(summary) {
+      var dbExists = fso && fso.FileExists(dbFile);
+      var legacyExists = fso && fso.FileExists(legacyUserFile);
+      var dbStatus = dbExists ? '<span class="pill">Criptografado</span>' : '<span class="pill bad">Nao criado</span>';
+      var legacyStatus = legacyExists ? '<span class="pill warn">JSON antigo encontrado</span>' : '<span class="pill">Sem JSON antigo</span>';
+      var html = "";
+
+      html += '<div class="section"><h2>Banco principal</h2><p>O cadastro de usuarios e senhas agora fica em arquivo criptografado dentro da pasta propria de dados.</p></div>';
+      html += '<table><tbody>';
+      html += '<tr><td>Pasta de dados</td><td><div class="path-box">' + escapeHtml(appDataDir) + '</div></td></tr>';
+      html += '<tr><td>Banco criptografado</td><td><div class="path-box">' + escapeHtml(dbFile) + '</div></td></tr>';
+      html += '<tr><td>Status</td><td>' + dbStatus + '</td></tr>';
+      html += '<tr><td>Ultima alteracao</td><td>' + escapeHtml(fileStamp(dbFile)) + '</td></tr>';
+      html += '<tr><td>Tamanho</td><td>' + escapeHtml(fileSizeLabel(dbFile)) + '</td></tr>';
+      html += '<tr><td>Arquivo antigo</td><td>' + legacyStatus + '</td></tr>';
+      html += '</tbody></table>';
+      html += '<div class="button-row">';
+      html += '<button class="secondary-btn" type="button" onclick="openFolder(appDataDir)">Abrir pasta dados</button>';
+      html += '<button class="secondary-btn" type="button" onclick="saveDatabaseAction()">Salvar banco criptografado</button>';
+      html += '<button class="secondary-btn" type="button" onclick="migrateLegacyUsersAction()">Migrar JSON antigo</button>';
+      html += '</div>';
+      html += '<div class="notice strong">As senhas nao ficam mais abertas no arquivo JSON. O app descriptografa o banco apenas em memoria durante o uso.</div>';
+
+      html += '<div class="section"><h2>Pasta do app principal</h2><div class="path-box">' + escapeHtml(appDir) + '</div></div>';
+      html += '<div class="section"><h2>Pasta do painel atual</h2><div class="path-box">' + escapeHtml(legacyRoot) + '</div></div>';
+      html += '<div class="section"><h2>Arquivo de dados</h2><div class="path-box">' + escapeHtml(dataFile) + '</div></div>';
+      html += '<div class="button-row">';
+      html += '<button class="secondary-btn" type="button" onclick="openFolder(appDir)">Abrir pasta do app</button>';
+      html += '<button class="secondary-btn" type="button" onclick="openFolder(legacyRoot)">Abrir pasta do painel</button>';
+      if (summary.exists) html += '<button class="secondary-btn" type="button" onclick="openFile(dataFile)">Abrir JSON de dados</button>';
+      html += '</div>';
+
+      html += '<div class="section" style="margin-top: 22px;"><h2>Resumo do JSON</h2></div>';
+      html += renderDataTable(summary);
+      return html;
+    }
+
+    function renderProfilesConfigTab() {
+      var selected = profiles[editingProfileIndex] || profiles[0];
+      var html = "";
+
+      html += '<div class="form-grid">';
+      html += '<div class="form-col" style="width: 40%;">';
+      html += '<div class="section"><h2>Tipos de perfil</h2><p>Selecione um perfil para definir os acessos liberados.</p></div>';
+      html += '<table><thead><tr><th>Perfil</th><th>Painel geral</th><th>Acoes</th></tr></thead><tbody>';
+      for (var i = 0; i < profiles.length; i++) {
+        html += '<tr>';
+        html += '<td>' + escapeHtml(profiles[i].name) + '</td>';
+        html += '<td>' + escapeHtml(profiles[i].dashboardScope == "geral" ? "Geral" : "Por usuario") + '</td>';
+        html += '<td class="inline-actions"><button class="secondary-btn" type="button" onclick="editProfile(' + i + ')">Editar</button></td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      html += '</div>';
+
+      html += '<div class="form-col" style="width: 60%;">';
+      html += '<div class="section"><h2>' + escapeHtml(selected ? selected.name : "Perfil") + '</h2><p>Marque no checklist quais acessos este perfil pode usar.</p></div>';
+      html += '<div class="field"><label for="profileName">Nome do perfil</label><input id="profileName" type="text" value="' + escapeAttr(selected ? selected.name : "") + '" /></div>';
+      html += '<div class="field"><label for="profileDashboardScope">Painel geral</label><select id="profileDashboardScope"><option value="geral"' + (selected && selected.dashboardScope == "geral" ? " selected" : "") + '>Geral</option><option value="usuario"' + (!selected || selected.dashboardScope != "geral" ? " selected" : "") + '>Por usuario conforme perfil</option></select></div>';
+      html += '<div class="field"><label>Acessos</label>' + renderProfileAccessChecks(selected ? selected.modules : ["dashboard"]) + '</div>';
+      html += '<div class="button-row">';
+      html += '<button class="primary-btn" style="width:auto;" type="button" onclick="saveProfileFromForm()">Salvar perfil</button>';
+      html += '<button class="secondary-btn" type="button" onclick="resetProfilesDefault()">Restaurar padrao</button>';
+      html += '</div>';
+      html += '<div class="notice">Os usuarios vinculados a este perfil passam a usar estes acessos quando o perfil for salvo.</div>';
+      html += '</div>';
+      html += '</div>';
+
+      return html;
+    }
+
+    function renderProfileAccessChecks(selectedModules) {
+      var labels = {
+        dashboard: "Painel Geral",
+        movimentacao: "Movimentacao",
+        expedicao: "Expedicao",
+        financeiro: "Financeiro",
+        relatorios: "Relatorios",
+        config: "Configuracao"
+      };
+      var html = '<div class="module-checks">';
+      html += '<div class="notice" style="margin:0 0 8px;">Acessos disponiveis no lado esquerdo do app.</div>';
+      for (var i = 0; i < MODULES.length; i++) {
+        var m = MODULES[i];
+        var checked = indexOf(selectedModules, m.id) >= 0 || m.id == "dashboard";
+        var disabled = m.id == "dashboard" ? " disabled" : "";
+        html += '<label><input id="profile_perm_' + m.id + '" type="checkbox"' + (checked ? " checked" : "") + disabled + ' />' + escapeHtml(labels[m.id] || m.title) + '</label>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function renderUsersConfigTab() {
+      var selected = editingUserIndex >= 0 && users[editingUserIndex] ? users[editingUserIndex] : null;
+      var html = "";
+
+      html += '<div class="form-grid">';
+      html += '<div class="form-col" style="width: 58%;">';
+      html += '<div class="section"><h2>Usuarios cadastrados</h2><p>Edite senhas, perfis e permissoes. As alteracoes sao salvas no banco criptografado.</p></div>';
+      html += '<table><thead><tr><th>Usuario</th><th>Nome</th><th>Perfil</th><th>Acoes</th></tr></thead><tbody>';
+      for (var i = 0; i < users.length; i++) {
+        html += '<tr>';
+        html += '<td>' + escapeHtml(users[i].username) + '</td>';
+        html += '<td>' + escapeHtml(users[i].name) + '</td>';
+        html += '<td>' + escapeHtml(users[i].role) + '</td>';
+        html += '<td class="inline-actions">';
+        html += '<button class="secondary-btn" type="button" onclick="editUser(' + i + ')">Editar</button>';
+        html += '<button class="danger-btn" type="button" onclick="deleteUser(' + i + ')">Excluir</button>';
+        html += '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      html += '<div class="button-row">';
+      html += '<button class="secondary-btn" type="button" onclick="newUser()">Novo usuario</button>';
+      html += '<button class="secondary-btn" type="button" onclick="reloadUsers()">Recarregar banco</button>';
+      html += '</div>';
+      html += '</div>';
+
+      html += '<div class="form-col" style="width: 42%;">';
+      html += '<div class="section"><h2>' + (selected ? "Editar usuario" : "Novo usuario") + '</h2><p>Defina senha e modulos liberados para este usuario.</p></div>';
+      html += '<div class="field"><label for="userUsername">Usuario</label><input id="userUsername" type="text" value="' + escapeAttr(selected ? selected.username : "") + '" /></div>';
+      html += '<div class="field"><label for="userName">Nome</label><input id="userName" type="text" value="' + escapeAttr(selected ? selected.name : "") + '" /></div>';
+      html += '<div class="field"><label for="userProfile">Perfil</label><select id="userProfile" onchange="previewUserProfileAccess()">' + renderProfileOptions(selected ? selected.profileId : "v1") + '</select></div>';
+      html += '<div class="field"><label for="userPassword">Senha</label><input id="userPassword" type="password" value="' + escapeAttr(selected ? selected.password : "") + '" /></div>';
+      html += '<div class="button-row" style="margin-top:-8px;"><button class="secondary-btn" type="button" onclick="toggleUserPassword()">Mostrar senha</button></div>';
+      html += '<div class="field"><label>Acessos do perfil</label><div id="userProfileAccess">' + renderProfileAccessSummary(selected ? selected.profileId : "v1") + '</div></div>';
+      html += '<div class="button-row">';
+      html += '<button class="primary-btn" style="width:auto;" type="button" onclick="saveUserFromForm()">Salvar usuario</button>';
+      html += '<button class="secondary-btn" type="button" onclick="newUser()">Limpar</button>';
+      html += '</div>';
+      html += '<div class="notice">Mantenha pelo menos um usuario com acesso a Configuracoes para nao perder a administracao do app.</div>';
+      html += '</div>';
+      html += '</div>';
+
+      return html;
+    }
+
+    function renderProfileOptions(selectedProfileId) {
+      selectedProfileId = normalizeProfileId(selectedProfileId);
+      var html = "";
+      for (var i = 0; i < profiles.length; i++) {
+        html += '<option value="' + escapeAttr(profiles[i].id) + '"' + (profiles[i].id == selectedProfileId ? " selected" : "") + '>' + escapeHtml(profiles[i].name) + '</option>';
+      }
+      return html;
+    }
+
+    function renderProfileAccessSummary(profileId) {
+      var profile = profileById(profileId);
+      var html = '<div class="module-checks">';
+      html += '<label>Painel Geral: ' + escapeHtml(profile.dashboardScope == "geral" ? "Geral" : "Por usuario conforme perfil") + '</label>';
+      for (var i = 0; i < MODULES.length; i++) {
+        var m = MODULES[i];
+        if (m.id == "dashboard") continue;
+        if (indexOf(profile.modules || [], m.id) >= 0) {
+          html += '<label>' + escapeHtml(m.title) + '</label>';
+        }
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function previewUserProfileAccess() {
+      var select = document.getElementById("userProfile");
+      var target = document.getElementById("userProfileAccess");
+      if (!select || !target) return;
+      target.innerHTML = renderProfileAccessSummary(select.value);
+    }
+
+    function editProfile(index) {
+      if (index < 0 || index >= profiles.length) return;
+      editingProfileIndex = index;
+      activeConfigTab = "profiles";
+      renderConfig();
+    }
+
+    function saveProfileFromForm() {
+      var profile = profiles[editingProfileIndex];
+      if (!profile) return;
+      var name = trim(document.getElementById("profileName").value);
+      var scope = document.getElementById("profileDashboardScope").value == "geral" ? "geral" : "usuario";
+      var modules = collectProfileModules();
+
+      if (!name) {
+        alert("Informe o nome do perfil.");
+        return;
+      }
+      if (profile.id == "admin" && indexOf(modules, "config") < 0) {
+        alert("O perfil Administrador precisa manter acesso a Configuracoes.");
+        return;
+      }
+
+      profile.name = name;
+      profile.dashboardScope = scope;
+      profile.modules = normalizeModules(modules);
+      applyProfilePermissionsToUsers();
+      relinkCurrentUser();
+      refreshCurrentUserHeader();
+      renderNav();
+
+      if (saveDatabase("Atualizacao de perfil")) {
+        activeConfigTab = "profiles";
+        renderConfig();
+        alert("Perfil salvo e aplicado aos usuarios vinculados.");
+      }
+    }
+
+    function collectProfileModules() {
+      var selected = ["dashboard"];
+      for (var i = 0; i < MODULES.length; i++) {
+        var m = MODULES[i];
+        if (m.id == "dashboard") continue;
+        var cb = document.getElementById("profile_perm_" + m.id);
+        if (cb && cb.checked) selected.push(m.id);
+      }
+      return selected;
+    }
+
+    function resetProfilesDefault() {
+      if (!confirm("Restaurar os perfis padrao vai substituir os checklists atuais. Continuar?")) return;
+      profiles = normalizeProfiles(DEFAULT_PROFILES);
+      editingProfileIndex = 0;
+      applyProfilePermissionsToUsers();
+      relinkCurrentUser();
+      refreshCurrentUserHeader();
+      renderNav();
+      if (saveDatabase("Restauracao dos perfis padrao")) {
+        activeConfigTab = "profiles";
+        renderConfig();
+      }
+    }
+
+    function renderModuleChecks(selectedModules) {
+      var html = '<div class="module-checks">';
+      for (var i = 0; i < MODULES.length; i++) {
+        var m = MODULES[i];
+        var checked = indexOf(selectedModules, m.id) >= 0 || m.id == "dashboard";
+        var disabled = m.id == "dashboard" ? " disabled" : "";
+        html += '<label><input id="perm_' + m.id + '" type="checkbox"' + (checked ? " checked" : "") + disabled + ' />' + escapeHtml(m.title) + '</label>';
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function fileStamp(path) {
+      try {
+        if (fso && path && fso.FileExists(path)) return String(fso.GetFile(path).DateLastModified);
+      } catch (e) {}
+      return "Nao encontrado";
+    }
+
+    function fileSizeLabel(path) {
+      try {
+        if (fso && path && fso.FileExists(path)) {
+          var size = fso.GetFile(path).Size;
+          if (size > 1024) return Math.round(size / 1024) + " KB";
+          return size + " bytes";
+        }
+      } catch (e) {}
+      return "0 bytes";
+    }
+
+    function saveDatabaseAction() {
+      if (saveDatabase("Salvamento manual em Configuracoes")) {
+        alert("Banco criptografado salvo com sucesso.");
+      }
+      renderConfig();
+    }
+
+    function migrateLegacyUsersAction() {
+      if (!fso || !fso.FileExists(legacyUserFile)) {
+        alert("Nenhum JSON antigo de usuarios foi encontrado.");
+        return;
+      }
+      if (!confirm("Migrar o JSON antigo vai substituir a lista atual de usuarios. Continuar?")) return;
+      try {
+        var parsed = parseJson(readText(legacyUserFile));
+        if (!parsed || !parsed.users || !parsed.users.length) {
+          alert("O JSON antigo nao contem usuarios validos.");
+          return;
+        }
+        profiles = normalizeProfiles(DEFAULT_PROFILES);
+        users = normalizeUsers(parsed.users);
+        applyProfilePermissionsToUsers();
+        editingUserIndex = -1;
+        relinkCurrentUser();
+        if (saveDatabase("Migracao manual do JSON antigo")) {
+          renderNav();
+          renderConfig();
+          alert("Usuarios migrados para o banco criptografado.");
+        }
+      } catch (e) {
+        alert("Nao foi possivel migrar o JSON antigo.");
+      }
+    }
+
+    function editUser(index) {
+      editingUserIndex = index;
+      activeConfigTab = "users";
+      renderConfig();
+    }
+
+    function newUser() {
+      editingUserIndex = -1;
+      activeConfigTab = "users";
+      renderConfig();
+    }
+
+    function deleteUser(index) {
+      if (index < 0 || index >= users.length) return;
+      if (currentUser && users[index].username == currentUser.username) {
+        alert("Nao exclua o usuario que esta logado agora.");
+        return;
+      }
+      if (!hasConfigUserAfterDelete(index)) {
+        alert("Mantenha pelo menos um usuario com acesso a Configuracoes.");
+        return;
+      }
+      if (!confirm("Excluir o usuario " + users[index].username + "?")) return;
+      users.splice(index, 1);
+      editingUserIndex = -1;
+      if (saveDatabase("Exclusao de usuario")) {
+        renderNav();
+        renderConfig();
+      }
+    }
+
+    function saveUserFromForm() {
+      var username = trim(document.getElementById("userUsername").value).toLowerCase();
+      var name = trim(document.getElementById("userName").value);
+      var profileId = normalizeProfileId(document.getElementById("userProfile").value);
+      var profile = profileById(profileId);
+      var role = profile.name;
+      var password = String(document.getElementById("userPassword").value || "");
+      var modules = normalizeModules(profile.modules);
+      var duplicateIndex = findUserIndex(username);
+      var wasCurrent = editingUserIndex >= 0 && currentUser && users[editingUserIndex] && users[editingUserIndex].username == currentUser.username;
+
+      if (!username) {
+        alert("Informe o usuario.");
+        return;
+      }
+      if (!password) {
+        alert("Informe a senha.");
+        return;
+      }
+      if (duplicateIndex >= 0 && duplicateIndex != editingUserIndex) {
+        alert("Ja existe um usuario com esse nome.");
+        return;
+      }
+      if (wasCurrent && indexOf(modules, "config") < 0) {
+        alert("O usuario logado precisa manter acesso a Configuracoes.");
+        return;
+      }
+
+      var updatedUser = {
+        username: username,
+        password: password,
+        name: name || username,
+        role: role || "Usuario",
+        profileId: profileId,
+        modules: normalizeModules(modules)
+      };
+
+      var candidate = clone(users);
+      if (editingUserIndex >= 0 && editingUserIndex < candidate.length) candidate[editingUserIndex] = updatedUser;
+      else candidate.push(updatedUser);
+
+      if (!hasConfigUser(candidate)) {
+        alert("Mantenha pelo menos um usuario com acesso a Configuracoes.");
+        return;
+      }
+
+      if (editingUserIndex >= 0 && editingUserIndex < users.length) {
+        users[editingUserIndex] = updatedUser;
+      } else {
+        users.push(updatedUser);
+        editingUserIndex = users.length - 1;
+      }
+
+      if (wasCurrent) currentUser = users[editingUserIndex];
+      if (saveDatabase("Cadastro de usuario")) {
+        relinkCurrentUser();
+        refreshCurrentUserHeader();
+        renderNav();
+        activeConfigTab = "users";
+        renderConfig();
+        alert("Usuario salvo no banco criptografado.");
+      }
+    }
+
+    function collectUserModules() {
+      var selected = ["dashboard"];
+      for (var i = 0; i < MODULES.length; i++) {
+        var m = MODULES[i];
+        if (m.id == "dashboard") continue;
+        var cb = document.getElementById("perm_" + m.id);
+        if (cb && cb.checked) selected.push(m.id);
+      }
+      return selected;
+    }
+
+    function toggleUserPassword() {
+      var field = document.getElementById("userPassword");
+      if (!field) return;
+      try {
+        field.type = field.type == "password" ? "text" : "password";
+      } catch (e) {}
+      field.focus();
+    }
+
+    function findUserIndex(username) {
+      username = trim(username).toLowerCase();
+      for (var i = 0; i < users.length; i++) {
+        if ((users[i].username || "").toLowerCase() == username) return i;
+      }
+      return -1;
+    }
+
+    function hasConfigUserAfterDelete(deleteIndex) {
+      for (var i = 0; i < users.length; i++) {
+        if (i == deleteIndex) continue;
+        if (indexOf(users[i].modules || [], "config") >= 0) return true;
+      }
+      return false;
+    }
+
+    function hasConfigUser(list) {
+      for (var i = 0; i < list.length; i++) {
+        if (indexOf(list[i].modules || [], "config") >= 0) return true;
+      }
+      return false;
+    }
+
+    function relinkCurrentUser() {
+      if (!currentUser) return;
+      var index = findUserIndex(currentUser.username);
+      if (index >= 0) currentUser = users[index];
+    }
+
+    function refreshCurrentUserHeader() {
+      if (!currentUser) return;
+      document.getElementById("currentUserName").innerHTML = escapeHtml(currentUser.name || currentUser.username);
+      document.getElementById("currentUserRole").innerHTML = escapeHtml(currentUser.role || "");
+    }
+
+    function readDataSummary() {
+      var result = { exists: false, totalKeys: 0, totalItems: 0, rows: [] };
+      if (!fso || !dataFile || !fso.FileExists(dataFile)) return result;
+
+      result.exists = true;
+      try {
+        var data = parseJson(readText(dataFile));
+        for (var key in data) {
+          if (!data.hasOwnProperty(key)) continue;
+          var value = data[key];
+          var count = estimateCount(value);
+          result.rows.push({ name: key, type: valueType(value), count: count });
+          result.totalKeys++;
+          result.totalItems += count;
+        }
+      } catch (e) {
+        result.rows.push({ name: "Erro", type: "JSON invalido", count: 0 });
+      }
+      return result;
+    }
+
+    function estimateCount(value) {
+      if (value === null || value === undefined) return 0;
+      if (typeof value.length == "number" && typeof value != "string") return value.length;
+      if (typeof value == "object") {
+        var count = 0;
+        for (var k in value) {
+          if (value.hasOwnProperty(k)) count++;
+        }
+        return count;
+      }
+      return 1;
+    }
+
+    function valueType(value) {
+      if (value === null) return "nulo";
+      if (typeof value.length == "number" && typeof value != "string") return "lista";
+      return typeof value;
+    }
+
+    function renderDataTable(summary) {
+      if (!summary.exists) {
+        return '<div class="empty">Nenhum arquivo painel_cestas_data.json foi encontrado nos caminhos conhecidos.</div>';
+      }
+      var html = '<div class="card"><div class="card-body"><table><thead><tr><th>Grupo</th><th>Tipo</th><th>Quantidade</th></tr></thead><tbody>';
+      for (var i = 0; i < summary.rows.length; i++) {
+        html += '<tr><td>' + escapeHtml(summary.rows[i].name) + '</td><td>' + escapeHtml(summary.rows[i].type) + '</td><td>' + summary.rows[i].count + '</td></tr>';
+      }
+      html += '</tbody></table></div></div>';
+      return html;
+    }
+
+    function readStatusFiles() {
+      var rows = [];
+      if (!fso || !statusDir || !fso.FolderExists(statusDir)) return rows;
+      try {
+        var folder = fso.GetFolder(statusDir);
+        var files = new Enumerator(folder.Files);
+        for (; !files.atEnd(); files.moveNext()) {
+          var file = files.item();
+          if ((file.Name || "").toLowerCase().indexOf(".json") < 0) continue;
+          var status = { usuario: file.Name.replace(".json", ""), arquivo: file.Path, atualizado: file.DateLastModified, estado: "OK" };
+          try {
+            var parsed = parseJson(readText(file.Path));
+            status.estado = parsed.status || parsed.estado || parsed.situacao || "OK";
+            status.usuario = parsed.usuario || parsed.user || status.usuario;
+          } catch (e) {
+            status.estado = "JSON invalido";
+          }
+          rows.push(status);
+        }
+      } catch (e2) {}
+      return rows;
+    }
+
+    function renderStatusTable(rows) {
+      if (!rows.length) {
+        return '<div class="empty">Nenhum status de usuario foi encontrado.</div>';
+      }
+      var html = '<div class="card"><div class="card-body"><table><thead><tr><th>Usuario</th><th>Status</th><th>Atualizado</th></tr></thead><tbody>';
+      for (var i = 0; i < rows.length; i++) {
+        html += '<tr><td>' + escapeHtml(rows[i].usuario) + '</td><td>' + escapeHtml(rows[i].estado) + '</td><td>' + escapeHtml(String(rows[i].atualizado)) + '</td></tr>';
+      }
+      html += '</tbody></table></div></div>';
+      return html;
+    }
+
+    function openLegacy(moduleId) {
+      var module = getModule(moduleId);
+      if (!module.legacy) return;
+      var path = combine(legacyRoot, module.legacy);
+      openFile(path);
+    }
+
+    function openFolder(path) {
+      if (!shell || !path) return;
+      try {
+        if (fso && fso.FolderExists(path)) shell.Run('explorer.exe "' + path + '"', 1, false);
+        else alert("Pasta nao encontrada:\\n" + path);
+      } catch (e) {
+        alert("Nao foi possivel abrir a pasta.");
+      }
+    }
+
+    function openFile(path) {
+      if (!shell || !path) return;
+      try {
+        if (fso && fso.FileExists(path)) shell.Run('"' + path + '"', 1, false);
+        else alert("Arquivo nao encontrado:\\n" + path);
+      } catch (e) {
+        alert("Nao foi possivel abrir o arquivo.");
+      }
+    }
+
+    function reloadCurrent() {
+      selectView(activeView);
+    }
+
+    function reloadUsers() {
+      loadDatabase();
+      ensureDatabase();
+      relinkCurrentUser();
+      refreshCurrentUserHeader();
+      activeConfigTab = "users";
+      renderConfig();
+    }
+
+    function setLoginAlert(message) {
+      var el = document.getElementById("loginAlert");
+      if (el) el.innerHTML = escapeHtml(message || "");
+    }
+
+    function trim(value) {
+      return String(value || "").replace(/^\s+|\s+$/g, "");
+    }
+
+    function escapeHtml(value) {
+      return String(value === undefined || value === null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/\r?\n/g, " ");
+    }
+  </script>
+</body>
+</html>
