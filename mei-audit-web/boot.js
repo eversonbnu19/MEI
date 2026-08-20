@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v13';
+const APP_VERSION='v15';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -16,36 +16,13 @@ function versionBadge(){return `<p class="meta" style="margin-top:6px"><b>Versã
 function timeout(ms,label){return new Promise((_,reject)=>setTimeout(()=>reject(new Error(label||'Tempo limite excedido')),ms));}
 async function withTimeout(promise,ms,label){return Promise.race([promise,timeout(ms,label)]);}
 
-// Correcao isolada dos controles do cabecalho/painel.
-// As abas navegam pela URL e o Sair encerra a sessao sem depender dos handlers internos do app.
-document.addEventListener('click',async event=>{
-  const tabControl=event.target?.closest?.('[data-tab]');
-  if(tabControl){
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    const next=new URL(location.href);
-    next.searchParams.delete('cadastro');
-    next.searchParams.set('tab',tabControl.dataset.tab||'inicio');
-    location.assign(next.toString());
-    return;
+function showPanelVersion(){
+  const role=document.querySelector('.top > div:first-child small');
+  if(role && !role.textContent.includes(`Versão ${APP_VERSION}`)){
+    role.textContent=`${role.textContent} • Versão ${APP_VERSION}`;
   }
-
-  const logoutControl=event.target?.closest?.('#logout');
-  if(logoutControl){
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    logoutControl.disabled=true;
-    logoutControl.textContent='Saindo...';
-    try{
-      const client=window.__GESTAO_SB__||sb||await ensureSb();
-      await withTimeout(client.auth.signOut(),4000,'Saida demorou demais.');
-    }catch(e){
-      console.warn('Falha ao encerrar sessao:',e);
-    }finally{
-      location.replace('./');
-    }
-  }
-},true);
+}
+new MutationObserver(showPanelVersion).observe(document.documentElement,{subtree:true,childList:true});
 
 async function ensureSb(){
   if(sb) return sb;
@@ -125,18 +102,6 @@ function patchPanelSource(source){
     "const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');"
   );
 
-  source=source.replace(
-    "let profile = null, sessionId = null, tab = 'inicio';",
-    "let profile = null, sessionId = null, tab = new URLSearchParams(location.search).get('tab') || 'inicio';"
-  );
-
-  source=source.replace(
-    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header><main class=\"wrap ${profile.role==='mei'?'mei-mobile':''}\">${tabs.length?`<nav class=\"tabs\">${tabs.map(x=>`<button data-tab=\"${x[0]}\" class=\"${tab===x[0]?'active':''}\">${x[1]}</button>`).join('')}</nav>`:''}${content}</main>`;",
-    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel} • Versão ${window.__GESTAO_APP_VERSION__||''}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header><main class=\"wrap ${profile.role==='mei'?'mei-mobile':''}\">${tabs.length?`<nav class=\"tabs\">${tabs.map(x=>`<a href=\"?tab=${encodeURIComponent(x[0])}\" data-tab=\"${x[0]}\" class=\"${tab===x[0]?'active':''}\">${x[1]}</a>`).join('')}</nav>`:''}${content}</main>`;"
-  );
-
-  source=source.replace("document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});","");
-
   const oldAfterLogin=`async function afterLogin(){
   await loadProfile();
   const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
@@ -149,9 +114,7 @@ function patchPanelSource(source){
   window.__GESTAO_AFTER_LOGIN_PROMISE__=(async()=>{
     await loadProfile();
     if(!profile) throw new Error('Perfil do usuário não encontrado.');
-    const requestedTab=new URLSearchParams(location.search).get('tab');
-    if(requestedTab) tab=requestedTab;
-    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){await render();return;}
+    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){tab='inicio';await render();return;}
     const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
     try{
       const sessionResult=await Promise.race([
@@ -163,6 +126,7 @@ function patchPanelSource(source){
     }catch(e){sessionId=null;console.warn('Sessão de auditoria não bloqueou o acesso:',e);}
     Promise.resolve(audit('login','access_session',sessionId,d)).catch(e=>console.warn('Auditoria de login indisponível:',e));
     window.__GESTAO_AFTER_LOGIN_USER__=profile.id;
+    tab='inicio';
     await render();
   })();
   try{return await window.__GESTAO_AFTER_LOGIN_PROMISE__;}finally{window.__GESTAO_AFTER_LOGIN_PROMISE__=null;}
@@ -176,12 +140,13 @@ function openApp(){
   if(appOpenPromise) return appOpenPromise;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=13',{cache:'no-store'});
+    const response=await fetch('./app.js?v=15',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
-    import('./patch-direct-users.js?v=13').catch(console.error);
+    showPanelVersion();
+    import('./patch-direct-users.js?v=15').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;});
   return appOpenPromise;
