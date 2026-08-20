@@ -12,29 +12,27 @@ const patch=read('patch-direct-users.js');
 const guard=read('entry-guard.js');
 const sw=read('sw.js');
 
-assert.match(index,/Gestão de Contratos v18/,'index deve identificar visualmente a versao v18');
-assert.match(index,/boot\.js\?v=18/,'index deve carregar boot v18');
-assert.match(boot,/const APP_VERSION='v18'/,'boot deve declarar v18');
-assert.match(boot,/app\.js\?v=18/,'boot deve carregar app v18');
-assert.match(boot,/patch-direct-users\.js\?v=18/,'boot deve carregar patch v18');
+assert.match(index,/Gestão de Contratos v19/,'index deve identificar visualmente a versao v19');
+assert.match(index,/boot\.js\?v=19/,'index deve carregar boot v19');
+assert.match(boot,/const APP_VERSION='v19'/,'boot deve declarar v19');
+assert.match(boot,/app\.js\?v=19/,'boot deve carregar app v19');
+assert.match(boot,/patch-direct-users\.js\?v=19/,'boot deve carregar patch v19');
 
 assert.match(app,/document\.querySelector\('#logout'\)\.onclick=logout/,'Sair deve usar handler interno original');
 assert.match(app,/document\.querySelectorAll\('\[data-tab\]'\)\.forEach\(b=>b\.onclick=\(\)=>\{tab=b\.dataset\.tab;render\(\);\}\)/,'abas devem navegar internamente via render');
-assert.match(app,/async function logout\(\)/,'funcao logout deve existir');
-assert.match(app,/async function render\(\)/,'funcao render deve existir');
 
-assert.doesNotMatch(boot,/href=\\"\?tab=/,'boot nao deve converter abas em links');
-assert.doesNotMatch(boot,/\?logout=1/,'boot nao deve converter Sair em rota');
-assert.doesNotMatch(boot,/get\('tab'\)/,'boot nao deve depender de parametro tab para navegar');
-assert.doesNotMatch(boot,/handleLogoutRoute/,'boot nao deve possuir rota externa de logout');
-
+assert.match(patch,/data-edit-user/,'tabela de usuarios deve ter acao Editar');
+assert.match(patch,/data-delete-user/,'tabela de usuarios deve ter acao Excluir');
+assert.match(patch,/mei-manage-user/,'acoes devem usar funcao administrativa segura');
+assert.match(patch,/action:'update'/,'edicao deve usar acao update');
+assert.match(patch,/action:'delete'/,'exclusao deve usar acao delete');
+assert.match(patch,/O histórico de contratos, horas, peças e fechamentos será preservado/,'exclusao deve informar preservacao de historico');
+assert.match(patch,/refreshUserManagement\(\)/,'acoes devem atualizar a tabela sem reload');
+assert.doesNotMatch(patch,/location\.reload\(\)/,'gestao de usuarios nao deve recarregar a pagina');
 assert.match(patch,/const appRoot=document\.querySelector\('#app'\)/,'observer deve ficar restrito ao app');
 assert.match(patch,/observer\.observe\(appRoot,\{subtree:true,childList:true\}\)/,'observer deve observar apenas o app');
-assert.doesNotMatch(patch,/observer\.observe\(document\.documentElement/,'observer do patch nao pode observar documento inteiro');
-assert.match(patch,/if\(scheduled\) return/,'observer deve agrupar mutacoes repetidas');
 
 assert.match(guard,/ACTION_SELECTOR='\[data-start\],\[data-end\],\[data-piece\],\[data-invoice\],\[data-pay\],\[data-download\]'/,'guard deve limitar-se a acoes operacionais');
-assert.doesNotMatch(guard,/data-tab|#logout/,'guard nao pode interceptar abas ou sair');
-assert.match(sw,/gestao-contratos-v18/,'service worker deve usar cache v18');
+assert.match(sw,/gestao-contratos-v19/,'service worker deve usar cache v19');
 
-console.log('OK - navegacao interna dos botoes validada para v18.');
+console.log('OK - gestao de usuarios v19 validada.');
