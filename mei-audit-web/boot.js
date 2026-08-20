@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v11';
+const APP_VERSION='v12';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -26,10 +26,7 @@ async function ensureSb(){
     window.__GESTAO_SB__=sb;
     status('');
     return sb;
-  }catch(e){
-    status('Falha de conexão.');
-    throw e;
-  }
+  }catch(e){status('Falha de conexão.');throw e;}
 }
 
 async function signInWithMigration(client,email,password,btn){
@@ -39,12 +36,10 @@ async function signInWithMigration(client,email,password,btn){
   const message=String(result.error?.message||'').toLowerCase();
   const invalid=code==='invalid_credentials'||message.includes('invalid login credentials')||message.includes('invalid credentials');
   if(!invalid) throw result.error;
-
   btn.textContent='Migrando acesso...';
   const migrated=await withTimeout(client.functions.invoke('mei-migrate-login',{body:{email,password}}),12000,'A migração do acesso demorou demais.');
   if(migrated.error) throw new Error(migrated.data?.error||migrated.error.message||'Não foi possível migrar o acesso.');
   if(!migrated.data?.ok) throw new Error(migrated.data?.error||'Credenciais inválidas.');
-
   btn.textContent='Validando acesso...';
   result=await withTimeout(client.auth.signInWithPassword({email,password}),10000,'A autenticação demorou demais.');
   if(result.error) throw result.error;
@@ -64,11 +59,7 @@ function showAccess(){
       await signInWithMigration(client,email,password,btn);
       btn.textContent='Carregando painel...';
       await withTimeout(openApp(),10000,'O painel demorou demais para carregar. Tente atualizar a página.');
-    }catch(e){
-      alert(clean(e?.message||e));
-      btn.disabled=false;
-      btn.textContent='Entrar';
-    }
+    }catch(e){alert(clean(e?.message||e));btn.disabled=false;btn.textContent='Entrar';}
   };
   document.querySelector('#openCompanySignup').onclick=()=>{location.href='?cadastro=empresa';};
 }
@@ -103,6 +94,25 @@ function patchPanelSource(source){
     "const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');"
   );
 
+  source=source.replace(
+    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header>",
+    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel} • Versão ${window.__GESTAO_APP_VERSION__||''}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header>"
+  );
+
+  const oldTabBinding="document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});";
+  const delegatedTabBinding=`if(!window.__GESTAO_TAB_NAV_BOUND__){
+  window.__GESTAO_TAB_NAV_BOUND__=true;
+  document.addEventListener('click',event=>{
+    const b=event.target?.closest?.('[data-tab]');
+    if(!b) return;
+    event.preventDefault();
+    tab=b.dataset.tab;
+    Promise.resolve(render()).catch(e=>{console.error(e);toast(e?.message||String(e));});
+  });
+}`;
+  if(!source.includes(oldTabBinding)) throw new Error('Navegação do painel incompatível com o carregador.');
+  source=source.replace(oldTabBinding,delegatedTabBinding);
+
   const oldAfterLogin=`async function afterLogin(){
   await loadProfile();
   const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
@@ -115,11 +125,7 @@ function patchPanelSource(source){
   window.__GESTAO_AFTER_LOGIN_PROMISE__=(async()=>{
     await loadProfile();
     if(!profile) throw new Error('Perfil do usuário não encontrado.');
-    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){
-      tab='inicio';
-      await render();
-      return;
-    }
+    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){tab='inicio';await render();return;}
     const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
     try{
       const sessionResult=await Promise.race([
@@ -128,20 +134,13 @@ function patchPanelSource(source){
       ]);
       if(sessionResult?.error) console.warn('Não foi possível registrar sessão:',sessionResult.error);
       sessionId=sessionResult?.data?.id||null;
-    }catch(e){
-      sessionId=null;
-      console.warn('Sessão de auditoria não bloqueou o acesso:',e);
-    }
+    }catch(e){sessionId=null;console.warn('Sessão de auditoria não bloqueou o acesso:',e);}
     Promise.resolve(audit('login','access_session',sessionId,d)).catch(e=>console.warn('Auditoria de login indisponível:',e));
     window.__GESTAO_AFTER_LOGIN_USER__=profile.id;
     tab='inicio';
     await render();
   })();
-  try{
-    return await window.__GESTAO_AFTER_LOGIN_PROMISE__;
-  }finally{
-    window.__GESTAO_AFTER_LOGIN_PROMISE__=null;
-  }
+  try{return await window.__GESTAO_AFTER_LOGIN_PROMISE__;}finally{window.__GESTAO_AFTER_LOGIN_PROMISE__=null;}
 }`;
 
   if(!source.includes(oldAfterLogin)) throw new Error('Versão do painel incompatível com o carregador.');
@@ -152,16 +151,12 @@ function openApp(){
   if(appOpenPromise) return appOpenPromise;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=11',{cache:'no-store'});
+    const response=await fetch('./app.js?v=12',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
-    try{
-      await import(blobUrl);
-    }finally{
-      URL.revokeObjectURL(blobUrl);
-    }
-    import('./patch-direct-users.js?v=11').catch(console.error);
+    try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
+    import('./patch-direct-users.js?v=12').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;});
   return appOpenPromise;
@@ -175,9 +170,4 @@ async function restoreSession(){
   }catch(e){console.warn('Sessão automática indisponível:',e);status('');}
 }
 
-if(isCompanySignup){
-  showCompanySignup();
-}else{
-  showAccess();
-  restoreSession();
-}
+if(isCompanySignup){showCompanySignup();}else{showAccess();restoreSession();}
