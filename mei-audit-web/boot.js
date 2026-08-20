@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v12';
+const APP_VERSION='v13';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -95,23 +95,16 @@ function patchPanelSource(source){
   );
 
   source=source.replace(
-    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header>",
-    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel} • Versão ${window.__GESTAO_APP_VERSION__||''}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header>"
+    "let profile = null, sessionId = null, tab = 'inicio';",
+    "let profile = null, sessionId = null, tab = new URLSearchParams(location.search).get('tab') || 'inicio';"
   );
 
-  const oldTabBinding="document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});";
-  const delegatedTabBinding=`if(!window.__GESTAO_TAB_NAV_BOUND__){
-  window.__GESTAO_TAB_NAV_BOUND__=true;
-  document.addEventListener('click',event=>{
-    const b=event.target?.closest?.('[data-tab]');
-    if(!b) return;
-    event.preventDefault();
-    tab=b.dataset.tab;
-    Promise.resolve(render()).catch(e=>{console.error(e);toast(e?.message||String(e));});
-  });
-}`;
-  if(!source.includes(oldTabBinding)) throw new Error('Navegação do painel incompatível com o carregador.');
-  source=source.replace(oldTabBinding,delegatedTabBinding);
+  source=source.replace(
+    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header><main class=\"wrap ${profile.role==='mei'?'mei-mobile':''}\">${tabs.length?`<nav class=\"tabs\">${tabs.map(x=>`<button data-tab=\"${x[0]}\" class=\"${tab===x[0]?'active':''}\">${x[1]}</button>`).join('')}</nav>`:''}${content}</main>`;",
+    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel} • Versão ${window.__GESTAO_APP_VERSION__||''}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header><main class=\"wrap ${profile.role==='mei'?'mei-mobile':''}\">${tabs.length?`<nav class=\"tabs\">${tabs.map(x=>`<a href=\"?tab=${encodeURIComponent(x[0])}\" data-tab=\"${x[0]}\" class=\"${tab===x[0]?'active':''}\">${x[1]}</a>`).join('')}</nav>`:''}${content}</main>`;"
+  );
+
+  source=source.replace("document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});","");
 
   const oldAfterLogin=`async function afterLogin(){
   await loadProfile();
@@ -125,7 +118,9 @@ function patchPanelSource(source){
   window.__GESTAO_AFTER_LOGIN_PROMISE__=(async()=>{
     await loadProfile();
     if(!profile) throw new Error('Perfil do usuário não encontrado.');
-    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){tab='inicio';await render();return;}
+    const requestedTab=new URLSearchParams(location.search).get('tab');
+    if(requestedTab) tab=requestedTab;
+    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){await render();return;}
     const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
     try{
       const sessionResult=await Promise.race([
@@ -137,7 +132,6 @@ function patchPanelSource(source){
     }catch(e){sessionId=null;console.warn('Sessão de auditoria não bloqueou o acesso:',e);}
     Promise.resolve(audit('login','access_session',sessionId,d)).catch(e=>console.warn('Auditoria de login indisponível:',e));
     window.__GESTAO_AFTER_LOGIN_USER__=profile.id;
-    tab='inicio';
     await render();
   })();
   try{return await window.__GESTAO_AFTER_LOGIN_PROMISE__;}finally{window.__GESTAO_AFTER_LOGIN_PROMISE__=null;}
@@ -151,12 +145,12 @@ function openApp(){
   if(appOpenPromise) return appOpenPromise;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=12',{cache:'no-store'});
+    const response=await fetch('./app.js?v=13',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
-    import('./patch-direct-users.js?v=12').catch(console.error);
+    import('./patch-direct-users.js?v=13').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;});
   return appOpenPromise;
