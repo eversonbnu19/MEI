@@ -36,18 +36,38 @@ function shell(content,tabs=[]){
 
 async function loginView(){
   app.innerHTML=`<div class="login"><div class="card"><h1>MEI Contratos Auditáveis</h1><p class="meta">Primeiro acesso: cadastre a empresa. Depois, dentro do painel da empresa, convide os MEIs e a Auditoria.</p><div class="field"><label>E-mail</label><input id="email" type="email" autocomplete="email"></div><div class="field"><label>Senha</label><input id="pass" type="password" autocomplete="current-password"></div><button class="pri full" id="login">Entrar</button><hr style="border:0;border-top:1px solid #e4e7ec;margin:20px 0"><h3>Cadastrar empresa</h3><div class="field"><label>Nome do responsável</label><input id="name"></div><div class="field"><label>Razão social / Nome da empresa</label><input id="companyName"></div><div class="field"><label>CNPJ da empresa</label><input id="cnpj"></div><button class="sec full" id="signup">Criar empresa com e-mail e senha acima</button><p class="meta">O primeiro cadastro cria o perfil <b>Empresa</b>. MEIs e Auditoria não se cadastram livremente: recebem convite por e-mail da empresa.</p></div></div>`;
-  document.querySelector('#login').onclick=async()=>{
+
+  const emailEl=document.querySelector('#email');
+  const passEl=document.querySelector('#pass');
+  const nameEl=document.querySelector('#name');
+  const companyNameEl=document.querySelector('#companyName');
+  const cnpjEl=document.querySelector('#cnpj');
+  const loginBtn=document.querySelector('#login');
+  const signupBtn=document.querySelector('#signup');
+
+  loginBtn.onclick=async()=>{
     try{
-      const {error}=await sb.auth.signInWithPassword({email:email.value,password:pass.value});
-      if(error) throw error; await afterLogin();
+      const email=(emailEl?.value||'').trim();
+      const password=passEl?.value||'';
+      if(!email||!password) throw new Error('Informe e-mail e senha.');
+      const {error}=await sb.auth.signInWithPassword({email,password});
+      if(error) throw error;
+      await afterLogin();
     }catch(e){toast(e.message)}
   };
-  document.querySelector('#signup').onclick=async()=>{
+
+  signupBtn.onclick=async()=>{
     try{
-      if(!email.value||!pass.value||!companyName.value) throw new Error('Preencha e-mail, senha e nome da empresa.');
+      const email=(emailEl?.value||'').trim();
+      const password=passEl?.value||'';
+      const name=(nameEl?.value||'').trim();
+      const companyName=(companyNameEl?.value||'').trim();
+      const cnpj=(cnpjEl?.value||'').trim();
+      if(!email||!password||!companyName) throw new Error('Preencha e-mail, senha e nome da empresa.');
       const {error}=await sb.auth.signUp({
-        email:email.value.trim(), password:pass.value,
-        options:{emailRedirectTo:SITE_URL,data:{name:name.value.trim(),company_name:companyName.value.trim(),cnpj:cnpj.value.trim()}}
+        email,
+        password,
+        options:{emailRedirectTo:SITE_URL,data:{name,company_name:companyName,cnpj}}
       });
       if(error) throw error;
       toast('Empresa cadastrada. Verifique o e-mail para confirmar o acesso.');
@@ -132,10 +152,10 @@ async function companyUsers(tabs,cid){
   shell(`<div class="card"><h2>Convidar usuário</h2><p class="meta">O usuário receberá um e-mail do sistema com um link seguro para criar/ativar o acesso.</p><div class="two"><div class="field"><label>Tipo</label><select id="inviteRole"><option value="mei">MEI</option><option value="auditor">Auditoria</option></select></div><div class="field"><label>Nome</label><input id="inviteName"></div></div><div class="field"><label>E-mail</label><input id="inviteEmail" type="email"></div><div class="field"><label>CNPJ do MEI (quando aplicável)</label><input id="inviteCnpj"></div><button class="pri" id="sendInvite">Enviar convite por e-mail</button></div><div class="card"><h2>Usuários e convites</h2><div class="table"><table><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th></tr>${rows||'<tr><td colspan="4">Nenhum usuário convidado.</td></tr>'}</table></div></div>`,tabs);
   document.querySelector('#sendInvite').onclick=async()=>{
     try{
-      const email=document.querySelector('#inviteEmail').value.trim();
-      const role=document.querySelector('#inviteRole').value;
-      const name=document.querySelector('#inviteName').value.trim();
-      const cnpj=document.querySelector('#inviteCnpj').value.trim();
+      const email=(document.querySelector('#inviteEmail')?.value||'').trim();
+      const role=document.querySelector('#inviteRole')?.value||'';
+      const name=(document.querySelector('#inviteName')?.value||'').trim();
+      const cnpj=(document.querySelector('#inviteCnpj')?.value||'').trim();
       if(!email||!name) throw new Error('Informe nome e e-mail.');
       const {data,error}=await sb.functions.invoke('mei-invite-user',{body:{company_id:cid,email,role,name,cnpj,redirect_to:SITE_URL}});
       if(error) throw error; if(!data?.ok) throw new Error(data?.error||'Falha ao enviar convite');
@@ -151,14 +171,14 @@ async function companyContracts(tabs,cid){
   const html=`<div class="card"><h2>Novo contrato</h2>${meis.length?`<div class="field"><label>MEI</label><select id="meiId">${meis.map(m=>`<option value="${m.user_id}">${esc(m.name)} — ${esc(m.email)}</option>`).join('')}</select></div>`:'<p class="meta">Convide e ative pelo menos um MEI na aba Usuários antes de criar contratos.</p>'}<div class="two"><div class="field"><label>Código</label><input id="code"></div><div class="field"><label>Modelo</label><select id="model"><option value="hour">Por hora</option><option value="piece">Por peça</option></select></div></div><div class="field"><label>Serviço</label><input id="service"></div><div class="two"><div class="field"><label>Início</label><input id="start" type="date" value="${today()}"></div><div class="field"><label>Fim</label><input id="end" type="date"></div></div><div class="field"><label>Valor/hora (se por hora)</label><input id="rate" type="number" step="0.01"></div><button class="pri" id="createContract" ${meis.length?'':'disabled'}>Criar contrato</button></div><div class="card"><h2>Contratos</h2><div class="table"><table><tr><th>Código</th><th>Modelo</th><th>Serviço</th><th>Valor/h</th><th>Ação</th></tr>${cs.map(c=>`<tr><td>${esc(c.code)}</td><td>${c.model}</td><td>${esc(c.service)}</td><td>${brl(c.hour_rate)}</td><td>${c.model==='piece'?`<button class="sec" data-rate="${c.id}">Adicionar peça</button>`:''}</td></tr>`).join('')}</table></div></div>`;
   shell(html,tabs);
   const create=document.querySelector('#createContract');
-  if(create) create.onclick=async()=>{try{const meiId=document.querySelector('#meiId').value;const{error}=await sb.from('mei_contracts').insert({company_id:cid,mei_id:meiId,code:code.value,model:model.value,service:service.value,start_date:start.value,end_date:end.value||null,hour_rate:Number(rate.value||0),created_by:profile.id});if(error)throw error;await audit('contract_created','contract',code.value,{model:model.value});toast('Contrato criado');render()}catch(e){toast(e.message)}};
+  if(create) create.onclick=async()=>{try{const meiId=document.querySelector('#meiId')?.value;if(!meiId)throw new Error('Selecione um MEI ativo.');const code=(document.querySelector('#code')?.value||'').trim();const model=document.querySelector('#model')?.value||'hour';const service=(document.querySelector('#service')?.value||'').trim();const start=document.querySelector('#start')?.value||'';const end=document.querySelector('#end')?.value||'';const rate=Number(document.querySelector('#rate')?.value||0);const{error}=await sb.from('mei_contracts').insert({company_id:cid,mei_id:meiId,code,model,service,start_date:start,end_date:end||null,hour_rate:rate,created_by:profile.id});if(error)throw error;await audit('contract_created','contract',code,{model});toast('Contrato criado');render()}catch(e){toast(e.message)}};
   document.querySelectorAll('[data-rate]').forEach(b=>b.onclick=async()=>{const name=prompt('Nome da peça');if(!name)return;const rate=Number(prompt('Valor unitário')||0);const{error}=await sb.from('mei_piece_rates').insert({contract_id:b.dataset.rate,piece_name:name,unit_rate:rate});if(error)toast(error.message);else{toast('Peça adicionada');render();}});
 }
 async function companyClosures(tabs,cid){
   const cs=await q('mei_contracts',{eq:{company_id:cid}}), cls=await q('mei_closures',{eq:{company_id:cid},order:'closed_at'}), invs=await q('mei_invoices');
   let html=`<div class="card"><h2>Fechar período</h2><div class="field"><label>Contrato</label><select id="closeContract">${cs.map(c=>`<option value="${c.id}">${esc(c.code)} — ${esc(c.service)}</option>`).join('')}</select></div><div class="two"><div class="field"><label>Início</label><input id="closeStart" type="date"></div><div class="field"><label>Fim</label><input id="closeEnd" type="date"></div></div><button class="pri" id="closeBtn">Fechar período</button></div><div class="card"><h2>Fechamentos</h2>${cls.map(c=>{const i=invs.find(x=>x.closure_id===c.id);return `<section class="card"><b>${c.period_start} a ${c.period_end}</b><p>${brl(c.total_value)} • ${c.status}</p>${i?`<p>NF ${esc(i.invoice_number)} <button class="sec" data-download="${i.id}" data-path="${esc(i.storage_path)}" data-closure="${c.id}">Baixar NF</button></p>`:'<p class="meta">Aguardando NF do MEI.</p>'}${['invoice_sent','invoice_received'].includes(c.status)?`<button class="pri" data-pay="${c.id}">Encaminhar p/ pagamento</button>`:''}</section>`}).join('')||'<p class="meta">Nenhum fechamento.</p>'}</div>`;
   shell(html,tabs);
-  document.querySelector('#closeBtn').onclick=async()=>{try{const{error}=await sb.rpc('mei_close_period',{p_contract:closeContract.value,p_start:closeStart.value,p_end:closeEnd.value});if(error)throw error;toast('Período fechado');render()}catch(e){toast(e.message)}};
+  document.querySelector('#closeBtn').onclick=async()=>{try{const contract=document.querySelector('#closeContract')?.value;const start=document.querySelector('#closeStart')?.value;const end=document.querySelector('#closeEnd')?.value;if(!contract||!start||!end)throw new Error('Informe contrato e período.');const{error}=await sb.rpc('mei_close_period',{p_contract:contract,p_start:start,p_end:end});if(error)throw error;toast('Período fechado');render()}catch(e){toast(e.message)}};
   document.querySelectorAll('[data-download]').forEach(b=>b.onclick=async()=>{try{const{data,error}=await sb.storage.from('mei-invoices').createSignedUrl(b.dataset.path,60);if(error)throw error;window.open(data.signedUrl,'_blank');await sb.rpc('mei_mark_invoice_received',{p_closure:b.dataset.closure});render()}catch(e){toast(e.message)}});
   document.querySelectorAll('[data-pay]').forEach(b=>b.onclick=async()=>{try{const{error}=await sb.rpc('mei_send_to_payment',{p_closure:b.dataset.pay});if(error)throw error;toast('Encaminhado para pagamento');render()}catch(e){toast(e.message)}});
 }
