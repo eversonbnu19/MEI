@@ -3,10 +3,14 @@ import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 const sb=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 
 function renameApp(){
-  document.title='Gestão de Contratos';
+  if(document.title!=='Gestão de Contratos') document.title='Gestão de Contratos';
   document.querySelectorAll('b,h1,h2,h3,p,small').forEach(el=>{
-    if(el.childElementCount===0 && el.textContent?.includes('MEI Contratos Auditáveis')) el.textContent=el.textContent.replaceAll('MEI Contratos Auditáveis','Gestão de Contratos');
-    if(el.childElementCount===0 && el.textContent?.includes('convite')) el.textContent=el.textContent.replace('Convide e ative pelo menos um MEI','Cadastre pelo menos um MEI');
+    if(el.childElementCount!==0) return;
+    const current=el.textContent||'';
+    let next=current;
+    if(next.includes('MEI Contratos Auditáveis')) next=next.replaceAll('MEI Contratos Auditáveis','Gestão de Contratos');
+    if(next.includes('Convide e ative pelo menos um MEI')) next=next.replace('Convide e ative pelo menos um MEI','Cadastre pelo menos um MEI');
+    if(next!==current) el.textContent=next;
   });
 }
 
@@ -16,8 +20,8 @@ async function patchUserForm(){
   btn.dataset.directPatched='1';
   btn.textContent='Salvar';
   const card=btn.closest('.card');
-  const h2=card?.querySelector('h2'); if(h2) h2.textContent='Cadastrar usuário';
-  const meta=card?.querySelector('.meta'); if(meta) meta.textContent='Cadastre MEI ou Auditoria diretamente. Nesta fase não há envio de e-mail.';
+  const h2=card?.querySelector('h2'); if(h2 && h2.textContent!=='Cadastrar usuário') h2.textContent='Cadastrar usuário';
+  const meta=card?.querySelector('.meta'); if(meta && meta.textContent!=='Cadastre MEI ou Auditoria diretamente. Nesta fase não há envio de e-mail.') meta.textContent='Cadastre MEI ou Auditoria diretamente. Nesta fase não há envio de e-mail.';
   if(!document.querySelector('#invitePassword')){
     const wrap=document.createElement('div');
     wrap.className='field';
@@ -50,6 +54,23 @@ async function patchUserForm(){
   };
 }
 
-const observer=new MutationObserver(()=>{renameApp();patchUserForm();});
-observer.observe(document.documentElement,{subtree:true,childList:true});
-renameApp();patchUserForm();
+function applyPatches(){
+  renameApp();
+  patchUserForm();
+}
+
+const appRoot=document.querySelector('#app');
+if(appRoot){
+  let scheduled=false;
+  const observer=new MutationObserver(()=>{
+    if(scheduled) return;
+    scheduled=true;
+    queueMicrotask(()=>{
+      scheduled=false;
+      applyPatches();
+    });
+  });
+  observer.observe(appRoot,{subtree:true,childList:true});
+}
+
+applyPatches();
