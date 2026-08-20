@@ -60,7 +60,7 @@ function showAccess(){
       const client=await withTimeout(ensureSb(),8000,'Falha ao conectar.');
       await signInWithMigration(client,email,password,btn);
       btn.textContent='Carregando painel...';
-      await withTimeout(openApp(),8000,'O painel demorou demais para carregar.');
+      await withTimeout(openApp(),10000,'O painel demorou demais para carregar. Tente atualizar a página.');
     }catch(e){
       alert(clean(e?.message||e));
       btn.disabled=false;
@@ -89,9 +89,46 @@ function showCompanySignup(){
       if(result.error)throw result.error;if(!result.data?.ok)throw new Error(result.data?.error||'Não foi possível cadastrar a empresa.');
       const login=await withTimeout(client.auth.signInWithPassword({email,password}),10000,'A autenticação demorou demais.');if(login.error)throw login.error;
       btn.textContent='Carregando painel...';
-      await withTimeout(openApp(),8000,'O painel demorou demais para carregar.');
+      await withTimeout(openApp(),10000,'O painel demorou demais para carregar. Tente atualizar a página.');
     }catch(e){alert(clean(e?.message||e));btn.disabled=false;btn.textContent='Cadastrar empresa';}
   };
+}
+
+function patchPanelSource(source){
+  source=source.replace(
+    "import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';\nimport { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';\n\nconst sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);",
+    "const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');"
+  );
+
+  const oldAfterLogin=`async function afterLogin(){
+  await loadProfile();
+  const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
+  const {data}=await sb.from('mei_access_sessions').insert({user_id:profile.id,...d}).select().single();
+  sessionId=data?.id||null; await audit('login','access_session',sessionId,d); tab='inicio'; render();
+}`;
+
+  const safeAfterLogin=`async function afterLogin(){
+  await loadProfile();
+  if(!profile) throw new Error('Perfil do usuário não encontrado.');
+  const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
+  try{
+    const sessionResult=await Promise.race([
+      Promise.resolve(sb.from('mei_access_sessions').insert({user_id:profile.id,...d}).select().single()),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('Registro de sessão excedeu o tempo limite.')),3000))
+    ]);
+    if(sessionResult?.error) console.warn('Não foi possível registrar sessão:',sessionResult.error);
+    sessionId=sessionResult?.data?.id||null;
+  }catch(e){
+    sessionId=null;
+    console.warn('Sessão de auditoria não bloqueou o acesso:',e);
+  }
+  Promise.resolve(audit('login','access_session',sessionId,d)).catch(e=>console.warn('Auditoria de login indisponível:',e));
+  tab='inicio';
+  await render();
+}`;
+
+  if(!source.includes(oldAfterLogin)) throw new Error('Versão do painel incompatível com o carregador.');
+  return source.replace(oldAfterLogin,safeAfterLogin);
 }
 
 function openApp(){
@@ -100,8 +137,7 @@ function openApp(){
     window.__GESTAO_SB__=sb;
     const response=await fetch('./app.js?v=10',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
-    let source=await response.text();
-    source=source.replace("import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';\nimport { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';\n\nconst sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);","const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');");
+    const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{
       await import(blobUrl);
@@ -118,7 +154,7 @@ async function restoreSession(){
   try{
     const client=await ensureSb();
     const {data}=await withTimeout(client.auth.getSession(),8000,'Sessão indisponível.');
-    if(data?.session) await withTimeout(openApp(),8000,'O painel demorou demais para carregar.');
+    if(data?.session) await withTimeout(openApp(),10000,'O painel demorou demais para carregar.');
   }catch(e){console.warn('Sessão automática indisponível:',e);status('');}
 }
 
