@@ -1,11 +1,12 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v15';
+const APP_VERSION='v16';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
 const params=new URLSearchParams(window.location.search||'');
 const isCompanySignup=params.get('cadastro')==='empresa';
+const isLogout=params.get('logout')==='1';
 let sb=null;
 let appOpenPromise=null;
 document.title=`Gestão de Contratos ${APP_VERSION}`;
@@ -102,6 +103,21 @@ function patchPanelSource(source){
     "const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');"
   );
 
+  source=source.replace(
+    "let profile = null, sessionId = null, tab = 'inicio';",
+    "let profile = null, sessionId = null, tab = new URLSearchParams(location.search).get('tab') || 'inicio';"
+  );
+
+  source=source.replace(
+    '<button data-tab="${x[0]}" class="${tab===x[0]?\'active\':\'\'}">${x[1]}</button>',
+    '<a href="?tab=${encodeURIComponent(x[0])}" data-tab="${x[0]}" class="${tab===x[0]?\'active\':\'\'}">${x[1]}</a>'
+  );
+
+  source=source.replace(
+    '<button id="logout" class="sec">Sair</button>',
+    '<a href="?logout=1" id="logout" class="sec" style="display:inline-block;text-decoration:none;border-radius:10px;padding:11px 14px;font-weight:800">Sair</a>'
+  );
+
   const oldAfterLogin=`async function afterLogin(){
   await loadProfile();
   const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
@@ -114,7 +130,9 @@ function patchPanelSource(source){
   window.__GESTAO_AFTER_LOGIN_PROMISE__=(async()=>{
     await loadProfile();
     if(!profile) throw new Error('Perfil do usuário não encontrado.');
-    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){tab='inicio';await render();return;}
+    const requestedTab=new URLSearchParams(location.search).get('tab');
+    if(requestedTab) tab=requestedTab;
+    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){await render();return;}
     const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
     try{
       const sessionResult=await Promise.race([
@@ -126,7 +144,6 @@ function patchPanelSource(source){
     }catch(e){sessionId=null;console.warn('Sessão de auditoria não bloqueou o acesso:',e);}
     Promise.resolve(audit('login','access_session',sessionId,d)).catch(e=>console.warn('Auditoria de login indisponível:',e));
     window.__GESTAO_AFTER_LOGIN_USER__=profile.id;
-    tab='inicio';
     await render();
   })();
   try{return await window.__GESTAO_AFTER_LOGIN_PROMISE__;}finally{window.__GESTAO_AFTER_LOGIN_PROMISE__=null;}
@@ -140,13 +157,13 @@ function openApp(){
   if(appOpenPromise) return appOpenPromise;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=15',{cache:'no-store'});
+    const response=await fetch('./app.js?v=16',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
     showPanelVersion();
-    import('./patch-direct-users.js?v=15').catch(console.error);
+    import('./patch-direct-users.js?v=16').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;});
   return appOpenPromise;
@@ -160,4 +177,14 @@ async function restoreSession(){
   }catch(e){console.warn('Sessão automática indisponível:',e);status('');}
 }
 
-if(isCompanySignup){showCompanySignup();}else{showAccess();restoreSession();}
+async function handleLogoutRoute(){
+  try{
+    const client=await ensureSb();
+    await withTimeout(client.auth.signOut(),4000,'Saída demorou demais.');
+  }catch(e){console.warn('Falha ao encerrar sessão:',e);}
+  finally{location.replace('./');}
+}
+
+if(isLogout){handleLogoutRoute();}
+else if(isCompanySignup){showCompanySignup();}
+else{showAccess();restoreSession();}
