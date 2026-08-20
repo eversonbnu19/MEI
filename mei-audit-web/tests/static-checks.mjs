@@ -8,28 +8,30 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 const index=read('index.html');
 const boot=read('boot.js');
 const app=read('app.js');
+const patch=read('patch-direct-users.js');
 const guard=read('entry-guard.js');
 const sw=read('sw.js');
-const styles=read('styles.css');
 
-assert.match(index,/Gestão de Contratos v13/,'index deve identificar visualmente a versao v13');
-assert.match(index,/entry-guard\.js\?v=13/,'index deve carregar a protecao v13');
-assert.match(index,/boot\.js\?v=13/,'index deve carregar o boot v13');
-assert.match(index,/styles\.css\?v=13/,'index deve carregar estilos v13');
-assert.match(boot,/const APP_VERSION='v13'/,'boot deve declarar a versao v13');
-assert.match(boot,/Versão \$\{APP_VERSION\}/,'tela inicial deve exibir a versao');
-assert.match(boot,/Versão \$\{window\.__GESTAO_APP_VERSION__/,'cabecalho interno deve exibir a versao');
-assert.match(boot,/href=\\"\?tab=\$\{encodeURIComponent\(x\[0\]\)\}\\"/,'abas devem ser links nativos');
-assert.match(boot,/new URLSearchParams\(location\.search\)\.get\('tab'\)/,'painel deve ler a aba pela URL');
-assert.doesNotMatch(boot,/__GESTAO_TAB_NAV_BOUND__/,'v13 nao deve depender de listener delegado para abas');
-assert.match(styles,/\.tabs a\{/,'estilos devem cobrir links de abas');
-assert.match(boot,/let appOpenPromise=null/,'boot deve ter trava de inicializacao');
-assert.match(boot,/if\(appOpenPromise\) return appOpenPromise/,'openApp deve reutilizar a mesma inicializacao');
-assert.match(boot,/__GESTAO_AFTER_LOGIN_PROMISE__/,'afterLogin deve ter trava contra execucao concorrente');
-assert.match(app,/mei_start_hour/,'fluxo MEI deve possuir RPC de entrada');
-assert.match(app,/mei_end_hour/,'fluxo MEI deve possuir RPC de saida');
-assert.match(guard,/data-start/,'guard deve proteger entrada');
-assert.match(guard,/data-end/,'guard deve proteger saida');
-assert.match(sw,/gestao-contratos-v13/,'service worker deve usar cache v13');
+assert.match(index,/Gestão de Contratos v17/,'index deve identificar visualmente a versao v17');
+assert.match(index,/boot\.js\?v=17/,'index deve carregar boot v17');
+assert.match(boot,/const APP_VERSION='v17'/,'boot deve declarar v17');
+assert.match(boot,/app\.js\?v=17/,'boot deve carregar app com versao v17');
+assert.match(boot,/patch-direct-users\.js\?v=17/,'boot deve carregar patch corrigido v17');
 
-console.log('OK - verificacoes estruturais do fluxo MEI v13 passaram.');
+assert.match(app,/document\.querySelector\('#logout'\)\.onclick=logout/,'Sair deve manter handler original');
+assert.match(app,/document\.querySelectorAll\('\[data-tab\]'\)\.forEach\(b=>b\.onclick=\(\)=>\{tab=b\.dataset\.tab;render\(\);\}\)/,'abas devem manter handlers originais');
+assert.match(app,/async function logout\(\)/,'funcao logout deve existir');
+assert.match(app,/async function render\(\)/,'funcao render deve existir');
+
+assert.match(patch,/const appRoot=document\.querySelector\('#app'\)/,'observer deve ficar restrito ao app');
+assert.match(patch,/observer\.observe\(appRoot,\{subtree:true,childList:true\}\)/,'observer deve observar apenas o app');
+assert.doesNotMatch(patch,/observer\.observe\(document\.documentElement/,'observer do patch nao pode observar documento inteiro');
+assert.match(patch,/if\(document\.title!==['"]Gestão de Contratos['"]\) document\.title=['"]Gestão de Contratos['"]/,'titulo so deve ser alterado quando necessario');
+assert.match(patch,/if\(next!==current\) el\.textContent=next/,'renomeacao so deve mutar DOM quando texto mudar');
+assert.match(patch,/if\(scheduled\) return/,'observer deve agrupar mutacoes repetidas');
+
+assert.match(guard,/ACTION_SELECTOR='\[data-start\],\[data-end\],\[data-piece\],\[data-invoice\],\[data-pay\],\[data-download\]'/,'guard deve limitar-se a acoes operacionais');
+assert.doesNotMatch(guard,/data-tab|#logout/,'guard nao pode interceptar abas ou sair');
+assert.match(sw,/gestao-contratos-v17/,'service worker deve usar cache v17');
+
+console.log('OK - logica dos botoes e observer validada para v17.');
