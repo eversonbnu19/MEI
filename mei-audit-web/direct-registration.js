@@ -1,0 +1,1 @@
+window.__MEI_DIRECT_REGISTRATION__=true;
