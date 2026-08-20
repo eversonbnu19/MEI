@@ -1,15 +1,18 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
+const APP_VERSION='v11';
 window.__GESTAO_BOOT_STARTED__=true;
+window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
 const params=new URLSearchParams(window.location.search||'');
 const isCompanySignup=params.get('cadastro')==='empresa';
 let sb=null;
 let appOpenPromise=null;
-document.title='Gestão de Contratos';
+document.title=`Gestão de Contratos ${APP_VERSION}`;
 
 function clean(s){return String(s??'').replace(/[<>&]/g,'');}
 function status(msg){const el=document.querySelector('#connectionStatus');if(el)el.textContent=msg||'';}
+function versionBadge(){return `<p class="meta" style="margin-top:6px"><b>Versão ${APP_VERSION}</b></p>`;}
 function timeout(ms,label){return new Promise((_,reject)=>setTimeout(()=>reject(new Error(label||'Tempo limite excedido')),ms));}
 async function withTimeout(promise,ms,label){return Promise.race([promise,timeout(ms,label)]);}
 
@@ -49,7 +52,7 @@ async function signInWithMigration(client,email,password,btn){
 }
 
 function showAccess(){
-  app.innerHTML=`<div class="login"><div class="card"><h1>Gestão de Contratos</h1><p class="meta">Use seu e-mail e senha para entrar como Empresa, MEI ou Auditoria.</p><div class="field"><label>E-mail</label><input id="accessEmail" type="email" autocomplete="email"></div><div class="field"><label>Senha</label><input id="accessPassword" type="password" autocomplete="current-password"></div><button class="pri full" id="accessBtn">Entrar</button><p class="meta" id="connectionStatus"></p><hr style="border:0;border-top:1px solid #e4e7ec;margin:20px 0"><h3>Cadastro inicial</h3><p class="meta">O cadastro da empresa é separado do acesso dos usuários.</p><button class="sec full" id="openCompanySignup">Cadastrar empresa</button></div></div>`;
+  app.innerHTML=`<div class="login"><div class="card"><h1>Gestão de Contratos</h1>${versionBadge()}<p class="meta">Use seu e-mail e senha para entrar como Empresa, MEI ou Auditoria.</p><div class="field"><label>E-mail</label><input id="accessEmail" type="email" autocomplete="email"></div><div class="field"><label>Senha</label><input id="accessPassword" type="password" autocomplete="current-password"></div><button class="pri full" id="accessBtn">Entrar</button><p class="meta" id="connectionStatus"></p><hr style="border:0;border-top:1px solid #e4e7ec;margin:20px 0"><h3>Cadastro inicial</h3><p class="meta">O cadastro da empresa é separado do acesso dos usuários.</p><button class="sec full" id="openCompanySignup">Cadastrar empresa</button></div></div>`;
   document.querySelector('#accessBtn').onclick=async()=>{
     const btn=document.querySelector('#accessBtn');
     try{
@@ -71,7 +74,7 @@ function showAccess(){
 }
 
 function showCompanySignup(){
-  app.innerHTML=`<div class="login"><div class="card"><h1>Cadastrar empresa</h1><p class="meta">Cadastro direto nesta fase. Não será enviado e-mail de convite ou confirmação.</p><div class="field"><label>Nome do responsável</label><input id="companyOwner"></div><div class="field"><label>Razão social / Nome da empresa</label><input id="companyName"></div><div class="field"><label>CNPJ da empresa</label><input id="companyCnpj"></div><div class="field"><label>E-mail de acesso da empresa</label><input id="companyEmail" type="email"></div><div class="field"><label>Crie uma senha</label><input id="companyPassword" type="password" minlength="8"></div><button class="pri full" id="createCompanyBtn">Cadastrar empresa</button><p class="meta" id="connectionStatus"></p><button class="sec full" id="backToAccess" style="margin-top:10px">Voltar para o acesso</button></div></div>`;
+  app.innerHTML=`<div class="login"><div class="card"><h1>Cadastrar empresa</h1>${versionBadge()}<p class="meta">Cadastro direto nesta fase. Não será enviado e-mail de convite ou confirmação.</p><div class="field"><label>Nome do responsável</label><input id="companyOwner"></div><div class="field"><label>Razão social / Nome da empresa</label><input id="companyName"></div><div class="field"><label>CNPJ da empresa</label><input id="companyCnpj"></div><div class="field"><label>E-mail de acesso da empresa</label><input id="companyEmail" type="email"></div><div class="field"><label>Crie uma senha</label><input id="companyPassword" type="password" minlength="8"></div><button class="pri full" id="createCompanyBtn">Cadastrar empresa</button><p class="meta" id="connectionStatus"></p><button class="sec full" id="backToAccess" style="margin-top:10px">Voltar para o acesso</button></div></div>`;
   document.querySelector('#backToAccess').onclick=()=>{location.href='./';};
   document.querySelector('#createCompanyBtn').onclick=async()=>{
     const btn=document.querySelector('#createCompanyBtn');
@@ -108,23 +111,37 @@ function patchPanelSource(source){
 }`;
 
   const safeAfterLogin=`async function afterLogin(){
-  await loadProfile();
-  if(!profile) throw new Error('Perfil do usuário não encontrado.');
-  const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
+  if(window.__GESTAO_AFTER_LOGIN_PROMISE__) return window.__GESTAO_AFTER_LOGIN_PROMISE__;
+  window.__GESTAO_AFTER_LOGIN_PROMISE__=(async()=>{
+    await loadProfile();
+    if(!profile) throw new Error('Perfil do usuário não encontrado.');
+    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){
+      tab='inicio';
+      await render();
+      return;
+    }
+    const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
+    try{
+      const sessionResult=await Promise.race([
+        Promise.resolve(sb.from('mei_access_sessions').insert({user_id:profile.id,...d}).select().single()),
+        new Promise((_,reject)=>setTimeout(()=>reject(new Error('Registro de sessão excedeu o tempo limite.')),3000))
+      ]);
+      if(sessionResult?.error) console.warn('Não foi possível registrar sessão:',sessionResult.error);
+      sessionId=sessionResult?.data?.id||null;
+    }catch(e){
+      sessionId=null;
+      console.warn('Sessão de auditoria não bloqueou o acesso:',e);
+    }
+    Promise.resolve(audit('login','access_session',sessionId,d)).catch(e=>console.warn('Auditoria de login indisponível:',e));
+    window.__GESTAO_AFTER_LOGIN_USER__=profile.id;
+    tab='inicio';
+    await render();
+  })();
   try{
-    const sessionResult=await Promise.race([
-      Promise.resolve(sb.from('mei_access_sessions').insert({user_id:profile.id,...d}).select().single()),
-      new Promise((_,reject)=>setTimeout(()=>reject(new Error('Registro de sessão excedeu o tempo limite.')),3000))
-    ]);
-    if(sessionResult?.error) console.warn('Não foi possível registrar sessão:',sessionResult.error);
-    sessionId=sessionResult?.data?.id||null;
-  }catch(e){
-    sessionId=null;
-    console.warn('Sessão de auditoria não bloqueou o acesso:',e);
+    return await window.__GESTAO_AFTER_LOGIN_PROMISE__;
+  }finally{
+    window.__GESTAO_AFTER_LOGIN_PROMISE__=null;
   }
-  Promise.resolve(audit('login','access_session',sessionId,d)).catch(e=>console.warn('Auditoria de login indisponível:',e));
-  tab='inicio';
-  await render();
 }`;
 
   if(!source.includes(oldAfterLogin)) throw new Error('Versão do painel incompatível com o carregador.');
@@ -135,7 +152,7 @@ function openApp(){
   if(appOpenPromise) return appOpenPromise;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=10',{cache:'no-store'});
+    const response=await fetch('./app.js?v=11',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
@@ -144,7 +161,7 @@ function openApp(){
     }finally{
       URL.revokeObjectURL(blobUrl);
     }
-    import('./patch-direct-users.js?v=10').catch(console.error);
+    import('./patch-direct-users.js?v=11').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;});
   return appOpenPromise;
