@@ -16,6 +16,37 @@ function versionBadge(){return `<p class="meta" style="margin-top:6px"><b>Versã
 function timeout(ms,label){return new Promise((_,reject)=>setTimeout(()=>reject(new Error(label||'Tempo limite excedido')),ms));}
 async function withTimeout(promise,ms,label){return Promise.race([promise,timeout(ms,label)]);}
 
+// Correcao isolada dos controles do cabecalho/painel.
+// As abas navegam pela URL e o Sair encerra a sessao sem depender dos handlers internos do app.
+document.addEventListener('click',async event=>{
+  const tabControl=event.target?.closest?.('[data-tab]');
+  if(tabControl){
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const next=new URL(location.href);
+    next.searchParams.delete('cadastro');
+    next.searchParams.set('tab',tabControl.dataset.tab||'inicio');
+    location.assign(next.toString());
+    return;
+  }
+
+  const logoutControl=event.target?.closest?.('#logout');
+  if(logoutControl){
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    logoutControl.disabled=true;
+    logoutControl.textContent='Saindo...';
+    try{
+      const client=window.__GESTAO_SB__||sb||await ensureSb();
+      await withTimeout(client.auth.signOut(),4000,'Saida demorou demais.');
+    }catch(e){
+      console.warn('Falha ao encerrar sessao:',e);
+    }finally{
+      location.replace('./');
+    }
+  }
+},true);
+
 async function ensureSb(){
   if(sb) return sb;
   status('Conectando ao sistema...');
