@@ -5,9 +5,10 @@ const app = document.querySelector('#app');
 const params = new URLSearchParams(window.location.search || '');
 const isCompanySignup = params.get('cadastro') === 'empresa';
 const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+document.title='Gestão de Contratos';
 
 function showAccess(){
-  app.innerHTML=`<div class="login"><div class="card"><h1>Acesso ao sistema</h1><p class="meta">Use seu e-mail e senha para entrar como Empresa, MEI ou Auditoria.</p><div class="field"><label>E-mail</label><input id="accessEmail" type="email" autocomplete="email"></div><div class="field"><label>Senha</label><input id="accessPassword" type="password" autocomplete="current-password"></div><button class="pri full" id="accessBtn">Entrar</button><hr style="border:0;border-top:1px solid #e4e7ec;margin:20px 0"><h3>Cadastro inicial</h3><p class="meta">O cadastro da empresa é separado do acesso dos usuários.</p><button class="sec full" id="openCompanySignup">Cadastrar empresa</button></div></div>`;
+  app.innerHTML=`<div class="login"><div class="card"><h1>Gestão de Contratos</h1><p class="meta">Use seu e-mail e senha para entrar como Empresa, MEI ou Auditoria.</p><div class="field"><label>E-mail</label><input id="accessEmail" type="email" autocomplete="email"></div><div class="field"><label>Senha</label><input id="accessPassword" type="password" autocomplete="current-password"></div><button class="pri full" id="accessBtn">Entrar</button><hr style="border:0;border-top:1px solid #e4e7ec;margin:20px 0"><h3>Cadastro inicial</h3><p class="meta">O cadastro da empresa é separado do acesso dos usuários.</p><button class="sec full" id="openCompanySignup">Cadastrar empresa</button></div></div>`;
 
   document.querySelector('#accessBtn').onclick=async()=>{
     const email=(document.querySelector('#accessEmail')?.value||'').trim();
@@ -53,6 +54,7 @@ if(isCompanySignup){
   const {data:{session}}=await sb.auth.getSession();
   if(session){
     await import('./direct-registration.js');
+    await import('./patch-direct-users.js');
     await import('./app.js');
   }else showAccess();
 }
