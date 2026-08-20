@@ -10,7 +10,8 @@ document.title='Gestão de Contratos';
 function clean(s){return String(s??'').replace(/[<>&]/g,'');}
 function status(msg){const el=document.querySelector('#connectionStatus');if(el)el.textContent=msg||'';}
 function timeout(ms,label){return new Promise((_,reject)=>setTimeout(()=>reject(new Error(label||'Tempo limite excedido')),ms));}
-async function importWithTimeout(src,ms=7000){return Promise.race([import(src),timeout(ms,'Tempo limite ao carregar biblioteca externa.')]);}
+function withTimeout(promise,ms,label){return Promise.race([promise,timeout(ms,label)]);}
+async function importWithTimeout(src,ms=7000){return withTimeout(import(src),ms,'Tempo limite ao carregar biblioteca externa.');}
 async function ensureSb(){
   if(sb) return sb;
   status('Conectando ao sistema...');
@@ -36,9 +37,18 @@ function showAccess(){
       if(!email||!password) throw new Error('Informe e-mail e senha.');
       btn.disabled=true;btn.textContent='Entrando...';
       const client=await ensureSb();
-      const {error}=await client.auth.signInWithPassword({email,password});if(error)throw error;
-      await openApp();
-    }catch(e){alert(clean(e?.message||e));btn.disabled=false;btn.textContent='Entrar';}
+      status('Validando acesso...');
+      const login=await withTimeout(client.auth.signInWithPassword({email,password}),12000,'A autenticação demorou mais que o esperado. Tente novamente.');
+      if(login.error) throw login.error;
+      status('Carregando painel...');
+      await withTimeout(openApp(),12000,'O acesso foi validado, mas o painel demorou para carregar. Atualize a página e tente novamente.');
+    }catch(e){
+      console.error('Falha no login:',e);
+      status('');
+      alert(clean(e?.message||e));
+      btn.disabled=false;
+      btn.textContent='Entrar';
+    }
   };
   document.querySelector('#openCompanySignup').onclick=()=>{location.href='?cadastro=empresa';};
 }
@@ -58,25 +68,26 @@ function showCompanySignup(){
       if(password.length<8) throw new Error('A senha deve ter pelo menos 8 caracteres.');
       btn.disabled=true;btn.textContent='Salvando...';
       const client=await ensureSb();
-      const {data,error}=await client.functions.invoke('mei-create-user',{body:{role:'company',name,company_name:companyName,cnpj,email,password}});
+      const {data,error}=await withTimeout(client.functions.invoke('mei-create-user',{body:{role:'company',name,company_name:companyName,cnpj,email,password}}),12000,'O cadastro demorou mais que o esperado. Tente novamente.');
       if(error)throw error;if(!data?.ok)throw new Error(data?.error||'Não foi possível cadastrar a empresa.');
-      const login=await client.auth.signInWithPassword({email,password});if(login.error)throw login.error;
-      await openApp();
+      const login=await withTimeout(client.auth.signInWithPassword({email,password}),12000,'A autenticação demorou mais que o esperado.');
+      if(login.error)throw login.error;
+      await withTimeout(openApp(),12000,'Cadastro concluído, mas o painel demorou para carregar. Atualize a página.');
     }catch(e){alert(clean(e?.message||e));btn.disabled=false;btn.textContent='Cadastrar empresa';}
   };
 }
 
 async function openApp(){
   window.__GESTAO_SB__=sb;
-  await import('./app.js?v=5');
-  import('./patch-direct-users.js?v=5').catch(console.error);
+  await import('./app.js?v=6');
+  import('./patch-direct-users.js?v=6').catch(console.error);
 }
 
 async function restoreSession(){
   try{
     const client=await ensureSb();
-    const {data}=await client.auth.getSession();
-    if(data?.session) await openApp();
+    const {data}=await withTimeout(client.auth.getSession(),8000,'Tempo limite ao recuperar sessão.');
+    if(data?.session){status('Carregando painel...');await withTimeout(openApp(),12000,'O painel demorou para carregar.');}
   }catch(e){console.warn('Sessão automática indisponível:',e);status('');}
 }
 
