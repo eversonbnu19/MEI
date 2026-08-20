@@ -5,6 +5,7 @@ const app=document.querySelector('#app');
 const params=new URLSearchParams(window.location.search||'');
 const isCompanySignup=params.get('cadastro')==='empresa';
 let sb=null;
+let appOpenPromise=null;
 document.title='Gestão de Contratos';
 
 function clean(s){return String(s??'').replace(/[<>&]/g,'');}
@@ -93,19 +94,24 @@ function showCompanySignup(){
   };
 }
 
-async function openApp(){
-  window.__GESTAO_SB__=sb;
-  const response=await fetch('./app.js?v=9',{cache:'no-store'});
-  if(!response.ok) throw new Error('Não foi possível carregar o painel.');
-  let source=await response.text();
-  source=source.replace("import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';\nimport { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';\n\nconst sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);","const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');");
-  const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
-  try{
-    await import(blobUrl);
-  }finally{
-    URL.revokeObjectURL(blobUrl);
-  }
-  import('./patch-direct-users.js?v=9').catch(console.error);
+function openApp(){
+  if(appOpenPromise) return appOpenPromise;
+  appOpenPromise=(async()=>{
+    window.__GESTAO_SB__=sb;
+    const response=await fetch('./app.js?v=10',{cache:'no-store'});
+    if(!response.ok) throw new Error('Não foi possível carregar o painel.');
+    let source=await response.text();
+    source=source.replace("import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';\nimport { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';\n\nconst sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);","const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');");
+    const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
+    try{
+      await import(blobUrl);
+    }finally{
+      URL.revokeObjectURL(blobUrl);
+    }
+    import('./patch-direct-users.js?v=10').catch(console.error);
+  })();
+  appOpenPromise.catch(()=>{appOpenPromise=null;});
+  return appOpenPromise;
 }
 
 async function restoreSession(){
@@ -116,5 +122,9 @@ async function restoreSession(){
   }catch(e){console.warn('Sessão automática indisponível:',e);status('');}
 }
 
-if(isCompanySignup)showCompanySignup();else showAccess();
-restoreSession();
+if(isCompanySignup){
+  showCompanySignup();
+}else{
+  showAccess();
+  restoreSession();
+}
