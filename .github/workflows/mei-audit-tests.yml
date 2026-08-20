@@ -1,0 +1,27 @@
+name: Testes MEI Auditavel
+
+on:
+  push:
+    branches:
+      - main
+      - 'fix/**'
+  pull_request:
+    paths:
+      - 'mei-audit-web/**'
+      - '.github/workflows/mei-audit-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Executar verificacoes
+        run: node mei-audit-web/tests/static-checks.mjs
