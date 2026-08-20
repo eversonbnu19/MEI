@@ -1,4 +1,4 @@
-const CACHE='gestao-contratos-v18';
+const CACHE='gestao-contratos-v19';
 const ASSETS=['./','./index.html','./styles.css','./entry-guard.js','./boot.js','./app.js','./patch-direct-users.js','./direct-registration.js','./config.js','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
