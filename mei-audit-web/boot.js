@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v13';
+const APP_VERSION='v14';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -16,6 +16,14 @@ function versionBadge(){return `<p class="meta" style="margin-top:6px"><b>Versã
 function timeout(ms,label){return new Promise((_,reject)=>setTimeout(()=>reject(new Error(label||'Tempo limite excedido')),ms));}
 async function withTimeout(promise,ms,label){return Promise.race([promise,timeout(ms,label)]);}
 
+function applyVisibleVersion(){
+  document.title=`Gestão de Contratos ${APP_VERSION}`;
+  const role=document.querySelector('.top > div:first-child small');
+  if(role && !role.textContent.includes(`Versão ${APP_VERSION}`)) role.textContent=`${role.textContent.replace(/\s*•\s*Versão\s+v\d+$/,'')} • Versão ${APP_VERSION}`;
+}
+const versionObserver=new MutationObserver(applyVisibleVersion);
+versionObserver.observe(document.documentElement,{subtree:true,childList:true});
+
 async function ensureSb(){
   if(sb) return sb;
   status('Conectando ao sistema...');
@@ -23,7 +31,6 @@ async function ensureSb(){
     const mod=await withTimeout(import('https://esm.sh/@supabase/supabase-js@2.57.4'),8000,'Falha ao carregar a biblioteca do sistema.');
     if(!mod?.createClient) throw new Error('Biblioteca do sistema inválida.');
     sb=mod.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-    window.__GESTAO_SB__=sb;
     status('');
     return sb;
   }catch(e){status('Falha de conexão.');throw e;}
@@ -58,7 +65,7 @@ function showAccess(){
       const client=await withTimeout(ensureSb(),8000,'Falha ao conectar.');
       await signInWithMigration(client,email,password,btn);
       btn.textContent='Carregando painel...';
-      await withTimeout(openApp(),10000,'O painel demorou demais para carregar. Tente atualizar a página.');
+      await withTimeout(openApp(),15000,'O painel demorou demais para carregar. Tente atualizar a página.');
     }catch(e){alert(clean(e?.message||e));btn.disabled=false;btn.textContent='Entrar';}
   };
   document.querySelector('#openCompanySignup').onclick=()=>{location.href='?cadastro=empresa';};
@@ -83,74 +90,18 @@ function showCompanySignup(){
       if(result.error)throw result.error;if(!result.data?.ok)throw new Error(result.data?.error||'Não foi possível cadastrar a empresa.');
       const login=await withTimeout(client.auth.signInWithPassword({email,password}),10000,'A autenticação demorou demais.');if(login.error)throw login.error;
       btn.textContent='Carregando painel...';
-      await withTimeout(openApp(),10000,'O painel demorou demais para carregar. Tente atualizar a página.');
+      await withTimeout(openApp(),15000,'O painel demorou demais para carregar. Tente atualizar a página.');
     }catch(e){alert(clean(e?.message||e));btn.disabled=false;btn.textContent='Cadastrar empresa';}
   };
-}
-
-function patchPanelSource(source){
-  source=source.replace(
-    "import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';\nimport { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';\n\nconst sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);",
-    "const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');"
-  );
-
-  source=source.replace(
-    "let profile = null, sessionId = null, tab = 'inicio';",
-    "let profile = null, sessionId = null, tab = new URLSearchParams(location.search).get('tab') || 'inicio';"
-  );
-
-  source=source.replace(
-    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header><main class=\"wrap ${profile.role==='mei'?'mei-mobile':''}\">${tabs.length?`<nav class=\"tabs\">${tabs.map(x=>`<button data-tab=\"${x[0]}\" class=\"${tab===x[0]?'active':''}\">${x[1]}</button>`).join('')}</nav>`:''}${content}</main>`;",
-    "app.innerHTML=`<header class=\"top\"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel} • Versão ${window.__GESTAO_APP_VERSION__||''}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id=\"logout\" class=\"sec\">Sair</button></div></header><main class=\"wrap ${profile.role==='mei'?'mei-mobile':''}\">${tabs.length?`<nav class=\"tabs\">${tabs.map(x=>`<a href=\"?tab=${encodeURIComponent(x[0])}\" data-tab=\"${x[0]}\" class=\"${tab===x[0]?'active':''}\">${x[1]}</a>`).join('')}</nav>`:''}${content}</main>`;"
-  );
-
-  source=source.replace("document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});","");
-
-  const oldAfterLogin=`async function afterLogin(){
-  await loadProfile();
-  const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
-  const {data}=await sb.from('mei_access_sessions').insert({user_id:profile.id,...d}).select().single();
-  sessionId=data?.id||null; await audit('login','access_session',sessionId,d); tab='inicio'; render();
-}`;
-
-  const safeAfterLogin=`async function afterLogin(){
-  if(window.__GESTAO_AFTER_LOGIN_PROMISE__) return window.__GESTAO_AFTER_LOGIN_PROMISE__;
-  window.__GESTAO_AFTER_LOGIN_PROMISE__=(async()=>{
-    await loadProfile();
-    if(!profile) throw new Error('Perfil do usuário não encontrado.');
-    const requestedTab=new URLSearchParams(location.search).get('tab');
-    if(requestedTab) tab=requestedTab;
-    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){await render();return;}
-    const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
-    try{
-      const sessionResult=await Promise.race([
-        Promise.resolve(sb.from('mei_access_sessions').insert({user_id:profile.id,...d}).select().single()),
-        new Promise((_,reject)=>setTimeout(()=>reject(new Error('Registro de sessão excedeu o tempo limite.')),3000))
-      ]);
-      if(sessionResult?.error) console.warn('Não foi possível registrar sessão:',sessionResult.error);
-      sessionId=sessionResult?.data?.id||null;
-    }catch(e){sessionId=null;console.warn('Sessão de auditoria não bloqueou o acesso:',e);}
-    Promise.resolve(audit('login','access_session',sessionId,d)).catch(e=>console.warn('Auditoria de login indisponível:',e));
-    window.__GESTAO_AFTER_LOGIN_USER__=profile.id;
-    await render();
-  })();
-  try{return await window.__GESTAO_AFTER_LOGIN_PROMISE__;}finally{window.__GESTAO_AFTER_LOGIN_PROMISE__=null;}
-}`;
-
-  if(!source.includes(oldAfterLogin)) throw new Error('Versão do painel incompatível com o carregador.');
-  return source.replace(oldAfterLogin,safeAfterLogin);
 }
 
 function openApp(){
   if(appOpenPromise) return appOpenPromise;
   appOpenPromise=(async()=>{
-    window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=13',{cache:'no-store'});
-    if(!response.ok) throw new Error('Não foi possível carregar o painel.');
-    const source=patchPanelSource(await response.text());
-    const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
-    try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
-    import('./patch-direct-users.js?v=13').catch(console.error);
+    await import('./app.js?v=14');
+    applyVisibleVersion();
+    await import('./patch-direct-users.js?v=14').catch(console.error);
+    applyVisibleVersion();
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;});
   return appOpenPromise;
@@ -160,7 +111,7 @@ async function restoreSession(){
   try{
     const client=await ensureSb();
     const {data}=await withTimeout(client.auth.getSession(),8000,'Sessão indisponível.');
-    if(data?.session) await withTimeout(openApp(),10000,'O painel demorou demais para carregar.');
+    if(data?.session) await withTimeout(openApp(),15000,'O painel demorou demais para carregar.');
   }catch(e){console.warn('Sessão automática indisponível:',e);status('');}
 }
 
