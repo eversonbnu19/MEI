@@ -1,10 +1,9 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
 const app = document.querySelector('#app');
 const params = new URLSearchParams(window.location.search || '');
 const isCompanySignup = params.get('cadastro') === 'empresa';
-const sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+let sb = null;
 document.title='Gestão de Contratos';
 
 function fatal(e){
@@ -12,6 +11,21 @@ function fatal(e){
   const msg=e?.message||String(e||'Erro desconhecido');
   app.innerHTML=`<div class="login"><div class="card"><h1>Gestão de Contratos</h1><h3>Falha ao carregar</h3><p class="meta">${msg.replace(/[<>&]/g,'')}</p><button class="pri full" id="retryBoot">Tentar novamente</button></div></div>`;
   document.querySelector('#retryBoot').onclick=()=>location.reload();
+}
+
+async function loadSupabase(){
+  const sources=[
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm',
+    'https://esm.sh/@supabase/supabase-js@2.57.4'
+  ];
+  let lastError=null;
+  for(const src of sources){
+    try{
+      const mod=await import(src);
+      if(mod?.createClient) return mod.createClient;
+    }catch(e){lastError=e;console.warn('Falha ao carregar Supabase de',src,e);}
+  }
+  throw new Error(`Não foi possível carregar a biblioteca do sistema. ${lastError?.message||''}`.trim());
 }
 
 function showAccess(){
@@ -52,6 +66,8 @@ function showCompanySignup(){
 }
 
 async function start(){
+  const createClient=await loadSupabase();
+  sb=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
   if(isCompanySignup){showCompanySignup();return;}
   const {data,error}=await sb.auth.getSession();
   if(error) throw error;
