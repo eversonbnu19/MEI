@@ -28,6 +28,25 @@ async function ensureSb(){
   }
 }
 
+async function signInWithMigration(client,email,password,btn){
+  let result=await withTimeout(client.auth.signInWithPassword({email,password}),10000,'A autenticação demorou demais.');
+  if(!result.error) return result;
+  const code=String(result.error?.code||'');
+  const message=String(result.error?.message||'').toLowerCase();
+  const invalid=code==='invalid_credentials'||message.includes('invalid login credentials')||message.includes('invalid credentials');
+  if(!invalid) throw result.error;
+
+  btn.textContent='Migrando acesso...';
+  const migrated=await withTimeout(client.functions.invoke('mei-migrate-login',{body:{email,password}}),12000,'A migração do acesso demorou demais.');
+  if(migrated.error) throw new Error(migrated.data?.error||migrated.error.message||'Não foi possível migrar o acesso.');
+  if(!migrated.data?.ok) throw new Error(migrated.data?.error||'Credenciais inválidas.');
+
+  btn.textContent='Validando acesso...';
+  result=await withTimeout(client.auth.signInWithPassword({email,password}),10000,'A autenticação demorou demais.');
+  if(result.error) throw result.error;
+  return result;
+}
+
 function showAccess(){
   app.innerHTML=`<div class="login"><div class="card"><h1>Gestão de Contratos</h1><p class="meta">Use seu e-mail e senha para entrar como Empresa, MEI ou Auditoria.</p><div class="field"><label>E-mail</label><input id="accessEmail" type="email" autocomplete="email"></div><div class="field"><label>Senha</label><input id="accessPassword" type="password" autocomplete="current-password"></div><button class="pri full" id="accessBtn">Entrar</button><p class="meta" id="connectionStatus"></p><hr style="border:0;border-top:1px solid #e4e7ec;margin:20px 0"><h3>Cadastro inicial</h3><p class="meta">O cadastro da empresa é separado do acesso dos usuários.</p><button class="sec full" id="openCompanySignup">Cadastrar empresa</button></div></div>`;
   document.querySelector('#accessBtn').onclick=async()=>{
@@ -38,8 +57,7 @@ function showAccess(){
       if(!email||!password) throw new Error('Informe e-mail e senha.');
       btn.disabled=true;btn.textContent='Validando acesso...';
       const client=await withTimeout(ensureSb(),8000,'Falha ao conectar.');
-      const result=await withTimeout(client.auth.signInWithPassword({email,password}),10000,'A autenticação demorou demais.');
-      if(result.error) throw result.error;
+      await signInWithMigration(client,email,password,btn);
       btn.textContent='Carregando painel...';
       await withTimeout(openApp(),8000,'O painel demorou demais para carregar.');
     }catch(e){
@@ -77,7 +95,7 @@ function showCompanySignup(){
 
 async function openApp(){
   window.__GESTAO_SB__=sb;
-  const response=await fetch('./app.js?v=8',{cache:'no-store'});
+  const response=await fetch('./app.js?v=9',{cache:'no-store'});
   if(!response.ok) throw new Error('Não foi possível carregar o painel.');
   let source=await response.text();
   source=source.replace("import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';\nimport { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';\n\nconst sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);","const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');");
@@ -87,7 +105,7 @@ async function openApp(){
   }finally{
     URL.revokeObjectURL(blobUrl);
   }
-  import('./patch-direct-users.js?v=8').catch(console.error);
+  import('./patch-direct-users.js?v=9').catch(console.error);
 }
 
 async function restoreSession(){
