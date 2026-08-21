@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v25';
+const APP_VERSION='v26';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -35,6 +35,18 @@ async function ensureSb(){
   }catch(e){status('Falha de conexão.');throw e;}
 }
 
+async function companyExists(){
+  const client=await ensureSb();
+  try{
+    const result=await withTimeout(client.functions.invoke('mei-company-status',{body:{}}),8000,'Não foi possível verificar o cadastro da empresa.');
+    if(result.error) throw result.error;
+    return Boolean(result.data?.company_exists);
+  }catch(e){
+    console.warn('Status da empresa indisponível:',e);
+    return true;
+  }
+}
+
 async function signInWithMigration(client,email,password,btn){
   let result=await withTimeout(client.auth.signInWithPassword({email,password}),10000,'A autenticação demorou demais.');
   if(!result.error) return result;
@@ -52,8 +64,10 @@ async function signInWithMigration(client,email,password,btn){
   return result;
 }
 
-function showAccess(){
-  app.innerHTML=`<div class="login"><div class="card"><h1>Gestão de Contratos</h1>${versionBadge()}<p class="meta">Use seu e-mail e senha para entrar como Empresa, MEI ou Auditoria.</p><div class="field"><label>E-mail</label><input id="accessEmail" type="email" autocomplete="email"></div><div class="field"><label>Senha</label><input id="accessPassword" type="password" autocomplete="current-password"></div><button class="pri full" id="accessBtn">Entrar</button><p class="meta" id="connectionStatus"></p><hr style="border:0;border-top:1px solid #e4e7ec;margin:20px 0"><h3>Cadastro inicial</h3><p class="meta">O cadastro da empresa é separado do acesso dos usuários.</p><button class="sec full" id="openCompanySignup">Cadastrar empresa</button></div></div>`;
+async function showAccess(){
+  const exists=await companyExists();
+  const signupBlock=exists?'':`<hr style="border:0;border-top:1px solid #e4e7ec;margin:20px 0"><h3>Cadastro inicial</h3><p class="meta">Cadastre a Empresa principal para iniciar o sistema.</p><button class="sec full" id="openCompanySignup">Cadastrar empresa</button>`;
+  app.innerHTML=`<div class="login"><div class="card"><h1>Gestão de Contratos</h1>${versionBadge()}<p class="meta">Use seu e-mail e senha para entrar como Empresa, MEI ou Auditoria.</p><div class="field"><label>E-mail</label><input id="accessEmail" type="email" autocomplete="email"></div><div class="field"><label>Senha</label><input id="accessPassword" type="password" autocomplete="current-password"></div><button class="pri full" id="accessBtn">Entrar</button><p class="meta" id="connectionStatus"></p>${signupBlock}</div></div>`;
   document.querySelector('#accessBtn').onclick=async()=>{
     const btn=document.querySelector('#accessBtn');
     try{
@@ -67,15 +81,21 @@ function showAccess(){
       await withTimeout(openApp(),10000,'O painel demorou demais para carregar. Tente atualizar a página.');
     }catch(e){alert(clean(e?.message||e));btn.disabled=false;btn.textContent='Entrar';}
   };
-  document.querySelector('#openCompanySignup').onclick=()=>{location.href='?cadastro=empresa';};
+  const signupBtn=document.querySelector('#openCompanySignup');
+  if(signupBtn) signupBtn.onclick=()=>{location.href='?cadastro=empresa';};
 }
 
-function showCompanySignup(){
-  app.innerHTML=`<div class="login"><div class="card"><h1>Cadastrar empresa</h1>${versionBadge()}<p class="meta">Cadastro direto nesta fase. Não será enviado e-mail de convite ou confirmação.</p><div class="field"><label>Nome do responsável</label><input id="companyOwner"></div><div class="field"><label>Razão social / Nome da empresa</label><input id="companyName"></div><div class="field"><label>CNPJ da empresa</label><input id="companyCnpj"></div><div class="field"><label>E-mail de acesso da empresa</label><input id="companyEmail" type="email"></div><div class="field"><label>Crie uma senha</label><input id="companyPassword" type="password" minlength="8"></div><button class="pri full" id="createCompanyBtn">Cadastrar empresa</button><p class="meta" id="connectionStatus"></p><button class="sec full" id="backToAccess" style="margin-top:10px">Voltar para o acesso</button></div></div>`;
+async function showCompanySignup(){
+  if(await companyExists()){
+    history.replaceState({},'',location.pathname);
+    return showAccess();
+  }
+  app.innerHTML=`<div class="login"><div class="card"><h1>Cadastrar empresa</h1>${versionBadge()}<p class="meta">Cadastro da Empresa principal.</p><div class="field"><label>Nome do responsável</label><input id="companyOwner"></div><div class="field"><label>Razão social / Nome da empresa</label><input id="companyName"></div><div class="field"><label>CNPJ da empresa</label><input id="companyCnpj"></div><div class="field"><label>E-mail de acesso da empresa</label><input id="companyEmail" type="email"></div><div class="field"><label>Crie uma senha</label><input id="companyPassword" type="password" minlength="8"></div><button class="pri full" id="createCompanyBtn">Cadastrar empresa</button><p class="meta" id="connectionStatus"></p><button class="sec full" id="backToAccess" style="margin-top:10px">Voltar para o acesso</button></div></div>`;
   document.querySelector('#backToAccess').onclick=()=>{location.href='./';};
   document.querySelector('#createCompanyBtn').onclick=async()=>{
     const btn=document.querySelector('#createCompanyBtn');
     try{
+      if(await companyExists()) throw new Error('A empresa principal já foi cadastrada.');
       const name=(document.querySelector('#companyOwner')?.value||'').trim();
       const companyName=(document.querySelector('#companyName')?.value||'').trim();
       const cnpj=(document.querySelector('#companyCnpj')?.value||'').trim();
@@ -135,17 +155,17 @@ function openApp(){
   if(appOpenPromise) return appOpenPromise;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=25',{cache:'no-store'});
+    const response=await fetch('./app.js?v=26',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
     showPanelVersion();
-    import('./patch-direct-users.js?v=25').catch(console.error);
-    import('./patch-company-dashboard.js?v=25').catch(console.error);
-    import('./patch-contract-cancel.js?v=25').catch(console.error);
-    import('./patch-audit-payment.js?v=25').catch(console.error);
-    import('./patch-entry-adjustments.js?v=25').catch(console.error);
+    import('./patch-direct-users.js?v=26').catch(console.error);
+    import('./patch-company-dashboard.js?v=26').catch(console.error);
+    import('./patch-contract-cancel.js?v=26').catch(console.error);
+    import('./patch-audit-payment.js?v=26').catch(console.error);
+    import('./patch-entry-adjustments.js?v=26').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;});
   return appOpenPromise;
@@ -159,5 +179,5 @@ async function restoreSession(){
   }catch(e){console.warn('Sessão automática indisponível:',e);status('');}
 }
 
-if(isCompanySignup){showCompanySignup();}
+if(isCompanySignup) showCompanySignup();
 else{showAccess();restoreSession();}
