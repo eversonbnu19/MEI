@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v20';
+const APP_VERSION='v21';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -18,9 +18,7 @@ async function withTimeout(promise,ms,label){return Promise.race([promise,timeou
 
 function showPanelVersion(){
   const role=document.querySelector('.top > div:first-child small');
-  if(role && !role.textContent.includes(`Versão ${APP_VERSION}`)){
-    role.textContent=`${role.textContent} • Versão ${APP_VERSION}`;
-  }
+  if(role && !role.textContent.includes(`Versão ${APP_VERSION}`)) role.textContent=`${role.textContent} • Versão ${APP_VERSION}`;
 }
 new MutationObserver(showPanelVersion).observe(document.documentElement,{subtree:true,childList:true});
 
@@ -101,14 +99,12 @@ function patchPanelSource(source){
     "import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';\nimport { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';\n\nconst sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);",
     "const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');"
   );
-
   const oldAfterLogin=`async function afterLogin(){
   await loadProfile();
   const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
   const {data}=await sb.from('mei_access_sessions').insert({user_id:profile.id,...d}).select().single();
   sessionId=data?.id||null; await audit('login','access_session',sessionId,d); tab='inicio'; render();
 }`;
-
   const safeAfterLogin=`async function afterLogin(){
   if(window.__GESTAO_AFTER_LOGIN_PROMISE__) return window.__GESTAO_AFTER_LOGIN_PROMISE__;
   window.__GESTAO_AFTER_LOGIN_PROMISE__=(async()=>{
@@ -131,7 +127,6 @@ function patchPanelSource(source){
   })();
   try{return await window.__GESTAO_AFTER_LOGIN_PROMISE__;}finally{window.__GESTAO_AFTER_LOGIN_PROMISE__=null;}
 }`;
-
   if(!source.includes(oldAfterLogin)) throw new Error('Versão do painel incompatível com o carregador.');
   return source.replace(oldAfterLogin,safeAfterLogin);
 }
@@ -140,13 +135,13 @@ function openApp(){
   if(appOpenPromise) return appOpenPromise;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=20',{cache:'no-store'});
+    const response=await fetch('./app.js?v=21',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
     showPanelVersion();
-    import('./patch-direct-users.js?v=20').catch(console.error);
+    import('./patch-direct-users.js?v=21').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;});
   return appOpenPromise;
