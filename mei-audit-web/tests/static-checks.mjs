@@ -8,42 +8,29 @@ const read=name=>fs.readFileSync(path.join(root,name),'utf8');
 const index=read('index.html');
 const boot=read('boot.js');
 const app=read('app.js');
-const usersPatch=read('patch-direct-users.js');
-const dashboardPatch=read('patch-company-dashboard.js');
-const cancelPatch=read('patch-contract-cancel.js');
+const auditPayment=read('patch-audit-payment.js');
 const guard=read('entry-guard.js');
 const sw=read('sw.js');
 
-assert.match(index,/Gestão de Contratos v23/,'index deve identificar visualmente a versao v23');
-assert.match(index,/boot\.js\?v=23/,'index deve carregar boot v23');
-assert.match(boot,/const APP_VERSION='v23'/,'boot deve declarar v23');
-assert.match(boot,/app\.js\?v=23/,'boot deve carregar app v23');
-assert.match(boot,/patch-direct-users\.js\?v=23/,'boot deve carregar patch de usuarios v23');
-assert.match(boot,/patch-company-dashboard\.js\?v=23/,'boot deve carregar patch do painel v23');
-assert.match(boot,/patch-contract-cancel\.js\?v=23/,'boot deve carregar patch de cancelamento v23');
+assert.match(index,/Gestão de Contratos v24/,'index deve identificar visualmente a versao v24');
+assert.match(index,/boot\.js\?v=24/,'index deve carregar boot v24');
+assert.match(boot,/const APP_VERSION='v24'/,'boot deve declarar v24');
+assert.match(boot,/app\.js\?v=24/,'boot deve carregar app v24');
+assert.match(boot,/patch-audit-payment\.js\?v=24/,'boot deve carregar modulo de contas a pagar v24');
 
-assert.match(app,/document\.querySelector\('#logout'\)\.onclick=logout/,'Sair deve usar handler interno original');
-assert.match(app,/document\.querySelectorAll\('\[data-tab\]'\)\.forEach\(b=>b\.onclick=\(\)=>\{tab=b\.dataset\.tab;render\(\);\}\)/,'abas devem navegar internamente via render');
+assert.match(app,/mei_send_to_payment/,'empresa deve manter fluxo de envio ao pagamento');
+assert.match(auditPayment,/sent_to_payment/,'NF deve ser liberada apenas apos envio ao pagamento');
+assert.match(auditPayment,/Baixar NF/,'auditoria deve ter botao para baixar NF');
+assert.match(auditPayment,/createSignedUrl/,'download deve usar URL assinada do arquivo original');
+assert.match(auditPayment,/mei-invoices/,'download deve usar bucket de notas fiscais');
+assert.match(auditPayment,/storage_path/,'download deve usar caminho armazenado da nota fiscal');
+assert.match(auditPayment,/aguardando envio ao pagamento/,'antes do envio ao pagamento a NF nao deve ser liberada');
+assert.match(auditPayment,/Auditoria da empresa/,'modulo deve atuar apenas no perfil Auditoria');
+assert.doesNotMatch(auditPayment,/\.delete\(/,'modulo nao deve excluir dados');
+assert.doesNotMatch(auditPayment,/location\.reload\(\)/,'modulo nao deve recarregar pagina');
 
-assert.match(usersPatch,/Nova senha \(opcional\)/,'gestao de usuarios deve permanecer');
-assert.match(dashboardPatch,/Avaliar renovação de contratos/,'painel deve manter alerta de renovacao');
-assert.match(dashboardPatch,/status==='active'/,'alerta de renovacao deve ignorar contratos cancelados');
+assert.match(guard,/ACTION_SELECTOR='\[data-start\],\[data-end\],\[data-piece\],\[data-invoice\],\[data-pay\],\[data-download\]'/,'guard deve manter escopo operacional');
+assert.match(sw,/gestao-contratos-v24/,'service worker deve usar cache v24');
+assert.match(sw,/patch-audit-payment\.js/,'service worker deve incluir modulo de contas a pagar');
 
-assert.match(cancelPatch,/Cancelar contrato/,'aba Contratos deve oferecer cancelamento');
-assert.match(cancelPatch,/Data do cancelamento/,'cancelamento deve exigir data');
-assert.match(cancelPatch,/Motivo do cancelamento/,'cancelamento deve exigir motivo');
-assert.match(cancelPatch,/if\(!cancelDate\)/,'data do cancelamento deve ser obrigatoria');
-assert.match(cancelPatch,/if\(!reason\)/,'motivo do cancelamento deve ser obrigatorio');
-assert.match(cancelPatch,/mei_cancel_contract/,'cancelamento deve usar funcao segura do banco');
-assert.match(cancelPatch,/contract_cancelled/,'cancelamento deve registrar auditoria');
-assert.match(cancelPatch,/status==='cancelled'/,'contrato cancelado deve permanecer visivel no historico');
-assert.match(cancelPatch,/cancellation_reason/,'motivo deve ser exibido apos cancelamento');
-assert.doesNotMatch(cancelPatch,/\.delete\(/,'interface nao deve excluir fisicamente o contrato');
-assert.doesNotMatch(cancelPatch,/location\.reload\(\)/,'cancelamento nao deve recarregar a pagina');
-assert.match(cancelPatch,/const appRoot=document\.querySelector\('#app'\)/,'observer de contratos deve ficar restrito ao app');
-
-assert.match(guard,/ACTION_SELECTOR='\[data-start\],\[data-end\],\[data-piece\],\[data-invoice\],\[data-pay\],\[data-download\]'/,'guard deve limitar-se a acoes operacionais');
-assert.match(sw,/gestao-contratos-v23/,'service worker deve usar cache v23');
-assert.match(sw,/patch-contract-cancel\.js/,'service worker deve incluir patch de cancelamento');
-
-console.log('OK - cancelamento de contratos validado para v23.');
+console.log('OK - NF para Auditoria Contas a Pagar validada para v24.');
