@@ -46,22 +46,40 @@ async function refreshUserManagement(force=false){
   usersRefreshPromise=(async()=>{
     try{
       const companyId=await getCompanyId();
-      const {data,error}=await sb.rpc('mei_company_people',{p_company:companyId});
-      if(error) throw error;
-      const people=data||[];
+      const [{data:peopleData,error:peopleErr},{data:{user},error:userErr}]=await Promise.all([
+        sb.rpc('mei_company_people',{p_company:companyId}),
+        sb.auth.getUser()
+      ]);
+      if(peopleErr) throw peopleErr;
+      if(userErr||!user) throw new Error('Sessão inválida.');
+      const {data:companyProfile,error:profileErr}=await sb.from('mei_profiles').select('id,name,email,cnpj,role').eq('id',user.id).maybeSingle();
+      if(profileErr) throw profileErr;
+      const companyPerson=companyProfile?{user_id:companyProfile.id,name:companyProfile.name,email:companyProfile.email,cnpj:companyProfile.cnpj,role:'company',status:'active'}:null;
+      const people=[...(companyPerson?[companyPerson]:[]),...(peopleData||[])];
       const signature=userSignature(people);
       if(!force && table.dataset.managementSignature===signature) return;
       table.dataset.managementSignature=signature;
       table.innerHTML=`<tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Ações</th></tr>${people.map(p=>{
         const active=Boolean(p.user_id)&&p.status==='active';
+        const isCompany=p.role==='company';
         const common=`data-name="${esc(p.name||'')}" data-email="${esc(p.email||'')}" data-role="${esc(p.role||'')}" data-cnpj="${esc(p.cnpj||'')}" data-status="${esc(p.status||'')}"`;
         const target=active?`data-user-id="${esc(p.user_id)}"`:`data-invite-email="${esc(p.email||'')}" data-invite-role="${esc(p.role||'')}"`;
-        return `<tr><td>${esc(p.name||'—')}</td><td>${esc(p.email||'')}</td><td>${p.role==='mei'?'MEI':'Auditoria'}</td><td>${active?'<span class="badge b-ok">Ativo</span>':'<span class="badge b-warn">Pendente</span>'}</td><td><button class="sec" data-edit-managed ${target} ${common}>Editar</button> <button class="sec" data-delete-managed ${target} ${common}>Excluir</button></td></tr>`;
+        const roleLabel=isCompany?'Empresa':p.role==='mei'?'MEI':'Auditoria';
+        const deleteButton=isCompany?'':` <button class="sec" data-delete-managed ${target} ${common}>Excluir</button>`;
+        return `<tr><td>${esc(p.name||'—')}</td><td>${esc(p.email||'')}</td><td>${roleLabel}</td><td>${active?'<span class="badge b-ok">Ativo</span>':'<span class="badge b-warn">Pendente</span>'}</td><td><button class="sec" data-edit-managed ${target} ${common}>Editar</button>${deleteButton}</td></tr>`;
       }).join('')||'<tr><td colspan="5">Nenhum usuário cadastrado.</td></tr>'}`;
       bindUserActions();
     }catch(e){console.error('Falha ao carregar gestão de usuários:',e);}
   })();
   try{return await usersRefreshPromise;}finally{usersRefreshPromise=null;}
+}
+
+function resetRoleSelect(){
+  const role=document.querySelector('#inviteRole');
+  if(!role) return;
+  role.disabled=false;
+  role.querySelector('option[data-company-only]')?.remove();
+  if(!['mei','auditor'].includes(role.value)) role.value='mei';
 }
 
 function clearEditMode(){
@@ -70,8 +88,11 @@ function clearEditMode(){
   const cancel=document.querySelector('#cancelUserEdit');
   if(formBtn) formBtn.textContent='Salvar';
   if(cancel) cancel.remove();
+  resetRoleSelect();
   const password=document.querySelector('#invitePassword');
+  const label=password?.closest('.field')?.querySelector('label');
   if(password){password.value='';password.disabled=false;password.closest('.field')?.removeAttribute('hidden');}
+  if(label) label.textContent='Senha inicial';
 }
 
 function loadIntoUserForm(btn){
@@ -83,30 +104,45 @@ function loadIntoUserForm(btn){
   const formBtn=document.querySelector('#sendInvite');
   if(!role||!name||!email||!cnpj||!formBtn) throw new Error('Formulário de usuário não encontrado.');
 
-  role.value=btn.dataset.role||'mei';
+  const isCompany=btn.dataset.role==='company';
+  const isActive=Boolean(btn.dataset.userId)&&btn.dataset.status==='active';
+  resetRoleSelect();
+  if(isCompany){
+    const opt=document.createElement('option');
+    opt.value='company';opt.textContent='Empresa';opt.dataset.companyOnly='1';
+    role.appendChild(opt);role.value='company';role.disabled=true;
+  }else role.value=btn.dataset.role||'mei';
   name.value=btn.dataset.name||'';
   email.value=btn.dataset.email||'';
   cnpj.value=btn.dataset.cnpj||'';
-  if(password){password.value='';password.disabled=true;password.closest('.field')?.setAttribute('hidden','');}
+
+  const passField=password?.closest('.field');
+  const passLabel=passField?.querySelector('label');
+  if(password){
+    password.value='';
+    if(isActive){
+      password.disabled=false;passField?.removeAttribute('hidden');
+      if(passLabel) passLabel.textContent='Nova senha (opcional)';
+    }else{
+      password.disabled=true;passField?.setAttribute('hidden','');
+    }
+  }
 
   editingTarget={
     user_id:btn.dataset.userId||'',
     invite_email:btn.dataset.inviteEmail||'',
     invite_role:btn.dataset.inviteRole||'',
-    status:btn.dataset.status||''
+    status:btn.dataset.status||'',
+    is_company:isCompany
   };
   formBtn.textContent='Atualizar usuário';
 
   if(!document.querySelector('#cancelUserEdit')){
     const cancel=document.createElement('button');
-    cancel.type='button';
-    cancel.id='cancelUserEdit';
-    cancel.className='sec';
-    cancel.style.marginLeft='8px';
-    cancel.textContent='Cancelar edição';
+    cancel.type='button';cancel.id='cancelUserEdit';cancel.className='sec';cancel.style.marginLeft='8px';cancel.textContent='Cancelar edição';
     cancel.onclick=()=>{
       clearEditMode();
-      name.value='';email.value='';cnpj.value='';role.value='mei';
+      name.value='';email.value='';cnpj.value='';
     };
     formBtn.insertAdjacentElement('afterend',cancel);
   }
@@ -118,9 +154,7 @@ function bindUserActions(){
   document.querySelectorAll('[data-edit-managed]').forEach(btn=>{
     if(btn.dataset.bound==='1') return;
     btn.dataset.bound='1';
-    btn.onclick=()=>{
-      try{loadIntoUserForm(btn);}catch(e){alert(e?.message||String(e));}
-    };
+    btn.onclick=()=>{try{loadIntoUserForm(btn);}catch(e){alert(e?.message||String(e));}};
   });
 
   document.querySelectorAll('[data-delete-managed]').forEach(btn=>{
@@ -151,14 +185,12 @@ async function patchUserForm(){
   const btn=document.querySelector('#sendInvite');
   if(!btn) return;
   if(btn.dataset.directPatched!=='1'){
-    btn.dataset.directPatched='1';
-    btn.textContent='Salvar';
+    btn.dataset.directPatched='1';btn.textContent='Salvar';
     const card=btn.closest('.card');
     const h2=card?.querySelector('h2'); if(h2 && h2.textContent!=='Cadastrar usuário') h2.textContent='Cadastrar usuário';
-    const meta=card?.querySelector('.meta'); if(meta && meta.textContent!=='Cadastre ou atualize MEI e Auditoria diretamente.') meta.textContent='Cadastre ou atualize MEI e Auditoria diretamente.';
+    const meta=card?.querySelector('.meta'); if(meta && meta.textContent!=='Cadastre ou atualize Empresa, MEI e Auditoria diretamente.') meta.textContent='Cadastre ou atualize Empresa, MEI e Auditoria diretamente.';
     if(!document.querySelector('#invitePassword')){
-      const wrap=document.createElement('div');
-      wrap.className='field';
+      const wrap=document.createElement('div');wrap.className='field';
       wrap.innerHTML='<label>Senha inicial</label><input id="invitePassword" type="password" minlength="8" autocomplete="new-password">';
       btn.parentNode.insertBefore(wrap,btn);
     }
@@ -173,17 +205,19 @@ async function patchUserForm(){
         const cnpj=(document.querySelector('#inviteCnpj')?.value||'').trim();
         const password=document.querySelector('#invitePassword')?.value||'';
         if(!email||!name) throw new Error('Informe nome e e-mail.');
+        if(password && password.length<8) throw new Error('A nova senha deve ter pelo menos 8 caracteres.');
         const companyId=await getCompanyId();
 
         if(editingTarget){
           btn.textContent='Atualizando...';
           const body={action:'update',company_id:companyId,name,email,role,cnpj};
+          if(password) body.password=password;
           if(editingTarget.user_id) body.user_id=editingTarget.user_id;
           else {body.invite_email=editingTarget.invite_email;body.invite_role=editingTarget.invite_role;}
           const {data,error}=await sb.functions.invoke('mei-manage-user',{body});
           if(error) throw error;
           if(!data?.ok) throw new Error(data?.error||'Não foi possível atualizar o usuário.');
-          alert('Usuário atualizado com sucesso.');
+          alert(data.password_changed?'Usuário e senha atualizados com sucesso.':'Usuário atualizado com sucesso.');
           clearEditMode();
         }else{
           btn.textContent='Salvando...';
@@ -194,12 +228,11 @@ async function patchUserForm(){
           alert('Usuário salvo com sucesso.');
         }
 
-        document.querySelector('#inviteName').value='';
-        document.querySelector('#inviteEmail').value='';
-        document.querySelector('#inviteCnpj').value='';
-        document.querySelector('#inviteRole').value='mei';
-        const pass=document.querySelector('#invitePassword');
+        document.querySelector('#inviteName').value='';document.querySelector('#inviteEmail').value='';document.querySelector('#inviteCnpj').value='';
+        resetRoleSelect();
+        const pass=document.querySelector('#invitePassword');const passLabel=pass?.closest('.field')?.querySelector('label');
         if(pass){pass.value='';pass.disabled=false;pass.closest('.field')?.removeAttribute('hidden');}
+        if(passLabel) passLabel.textContent='Senha inicial';
         await refreshUserManagement(true);
       }catch(e){alert(e?.message||String(e));}
       finally{btn.disabled=false;btn.textContent=editingTarget?'Atualizar usuário':'Salvar';}
@@ -209,16 +242,13 @@ async function patchUserForm(){
 }
 
 function applyPatches(){renameApp();patchUserForm();}
-
 const appRoot=document.querySelector('#app');
 if(appRoot){
   let scheduled=false;
   const observer=new MutationObserver(()=>{
     if(scheduled) return;
-    scheduled=true;
-    queueMicrotask(()=>{scheduled=false;applyPatches();});
+    scheduled=true;queueMicrotask(()=>{scheduled=false;applyPatches();});
   });
   observer.observe(appRoot,{subtree:true,childList:true});
 }
-
 applyPatches();
