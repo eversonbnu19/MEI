@@ -10,6 +10,20 @@ const esc = s => String(s ?? '').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;',
 const today = () => new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date());
 let profile = null, sessionId = null, tab = 'inicio';
 
+function requiredGps(){
+  if(!navigator.geolocation) return Promise.reject(new Error('Este dispositivo não disponibiliza localização. O registro por hora exige GPS.'));
+  return new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(
+    p=>{
+      const accuracy=Number(p.coords.accuracy||0);
+      if(!Number.isFinite(p.coords.latitude)||!Number.isFinite(p.coords.longitude)||accuracy<=0) return reject(new Error('Não foi possível confirmar uma localização válida.'));
+      if(accuracy>100) return reject(new Error('A precisão do GPS está baixa demais (acima de 100 m). Aguarde um sinal melhor para registrar.'));
+      resolve({latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy});
+    },
+    e=>reject(new Error(e.code===1?'A localização foi negada. Autorize o GPS para registrar horas.':e.code===3?'A localização demorou demais. Tente novamente em local aberto.':'Não foi possível obter o GPS. Ative a localização e tente novamente.')),
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+  ));
+}
+
 function toast(t){
   const d=document.createElement('div');
   d.className='toast'; d.textContent=t; document.body.append(d);
@@ -114,8 +128,8 @@ async function renderMei(){
     }
   }
   shell(cards,tabs);
-  document.querySelectorAll('[data-start]').forEach(b=>b.onclick=async()=>{try{const{error}=await sb.rpc('mei_start_hour',{p_contract:b.dataset.start,p_session:sessionId});if(error)throw error;toast('Entrada registrada pelo servidor');render()}catch(e){toast(e.message)}});
-  document.querySelectorAll('[data-end]').forEach(b=>b.onclick=async()=>{try{const{error}=await sb.rpc('mei_end_hour',{p_entry:b.dataset.end,p_session:sessionId});if(error)throw error;toast('Saída registrada');render()}catch(e){toast(e.message)}});
+  document.querySelectorAll('[data-start]').forEach(b=>b.onclick=async()=>{try{const gps=await requiredGps();const{error}=await sb.rpc('mei_start_hour',{p_contract:b.dataset.start,p_session:sessionId,p_latitude:gps.latitude,p_longitude:gps.longitude,p_accuracy:gps.accuracy});if(error)throw error;toast('Entrada registrada com GPS confirmado');render()}catch(e){toast(e.message)}});
+  document.querySelectorAll('[data-end]').forEach(b=>b.onclick=async()=>{try{const gps=await requiredGps();const{error}=await sb.rpc('mei_end_hour',{p_entry:b.dataset.end,p_session:sessionId,p_latitude:gps.latitude,p_longitude:gps.longitude,p_accuracy:gps.accuracy});if(error)throw error;toast('Saída registrada com GPS confirmado');render()}catch(e){toast(e.message)}});
   document.querySelectorAll('[data-piece]').forEach(b=>b.onclick=async()=>{const id=b.dataset.piece;try{const{error}=await sb.rpc('mei_add_piece',{p_contract:id,p_piece_rate:document.querySelector(`#piece_${id}`).value,p_lot:document.querySelector(`#lot_${id}`).value,p_quantity:Number(document.querySelector(`#qty_${id}`).value),p_session:sessionId});if(error)throw error;toast('Produção registrada');render()}catch(e){toast(e.message)}});
 }
 async function meiHistory(tabs){
