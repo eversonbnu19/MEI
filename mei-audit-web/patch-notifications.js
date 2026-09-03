@@ -1,6 +1,6 @@
-// v30: a notificação é deliberadamente assíncrona: um problema de e-mail nunca reverte o fechamento/NF.
+// v31: a notificação é deliberadamente assíncrona: um problema de e-mail nunca reverte o fechamento/NF.
 const sb=window.__GESTAO_SB__;
-const EVENTS={mei_close_period:'closure_created',mei_register_invoice:'invoice_sent',mei_mark_invoice_received:'invoice_received'};
+const EVENTS={mei_close_period:'closure_created',mei_register_invoice:'invoice_sent',mei_send_to_payment:'sent_to_payment'};
 
 function notify(event,closureId){
   if(!closureId) return;
