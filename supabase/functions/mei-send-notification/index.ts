@@ -91,7 +91,13 @@ Deno.serve(async request=>{
     const subject=`${recipientName} // ${profile.name||profile.email} // Fechamento ${formatDate(closure.period_start)} a ${formatDate(closure.period_end)} // ${title[event!][recipientRole]}`;
     const attemptResult=await admin.from('mei_notifications').select('attempt').eq('closure_id',closure.id).eq('event',event!).eq('email',person.email).order('attempt',{ascending:false}).limit(1).maybeSingle();
     const attempt=(attemptResult.data?.attempt||0)+1;
-    const {data:notification}=await admin.from('mei_notifications').insert({closure_id:closure.id,event,recipient_role:recipientRole,email:person.email,attempt,status:'pending'}).select('id').single();
+    const {data:notification,error:notificationError}=await admin.from('mei_notifications').insert({closure_id:closure.id,event,recipient_role:recipientRole,email:person.email,attempt,status:'pending'}).select('id').single();
+    if(notificationError){
+      // Uma solicitação concorrente já registrou/envia este mesmo aviso. Reenvios
+      // continuam permitidos porque usam uma linha anterior com status failed.
+      if(notificationError.code==='23505'){results.push({email:person.email,status:'skipped'});continue;}
+      throw notificationError;
+    }
     const contract=(closure.mei_contracts as {code?:string,service?:string}|null)||{};
     const html=`<p>Olá, ${escapeHtml(recipientName)}.</p><p>${escapeHtml(title[event!][recipientRole])}.</p><p><b>Contrato:</b> ${escapeHtml(contract.code)} — ${escapeHtml(contract.service)}<br><b>Período:</b> ${formatDate(closure.period_start)} a ${formatDate(closure.period_end)}<br><b>Valor do fechamento:</b> R$ ${Number(closure.total_value||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}${invoice?`<br><b>NFSe:</b> ${escapeHtml(invoice.invoice_number)}`:''}</p><p>Esta mensagem foi gerada automaticamente pelo sistema Gestão de Contratos.</p>`;
     try{

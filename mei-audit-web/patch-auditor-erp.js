@@ -30,8 +30,7 @@ async function markErpPosted(closureId){
   if(!confirm('Confirma que a NFSe foi conferida e lançada no ERP?')) return;
   const {error}=await erpSb.rpc('mei_mark_erp_posted',{p_closure:closureId});
   if(error) throw error;
-  // Aguarda o registro assíncrono sem permitir que uma falha de e-mail reverta a confirmação.
-  await Promise.resolve(window.__GESTAO_NOTIFY__?.('erp_posted',closureId));
+  // patch-notifications intercepta a RPC e dispara o e-mail uma única vez.
 }
 
 function refreshPendingPanel(panel){
