@@ -32,7 +32,17 @@ async function markErpPosted(closureId){
   if(error) throw error;
   // Aguarda o registro assíncrono sem permitir que uma falha de e-mail reverta a confirmação.
   await Promise.resolve(window.__GESTAO_NOTIFY__?.('erp_posted',closureId));
-  location.reload();
+}
+
+function refreshPendingPanel(panel){
+  const rows=[...panel.querySelectorAll('tbody tr')];
+  const count=rows.length;
+  const description=panel.querySelector('[data-erp-pending-count]');
+  if(description) description.textContent=count?`${count} NFSe${count===1?'':'s'} precisa${count===1?'':'m'} da sua ação.`:'Não há NFSe pendente de lançamento no ERP.';
+  if(!count){
+    const table=panel.querySelector('.table');
+    if(table) table.remove();
+  }
 }
 
 async function renderErpPending(){
@@ -52,12 +62,12 @@ async function renderErpPending(){
     const pending=(closures||[]).filter(closure=>!posted.has(closure.id));
     const panel=document.createElement('section');
     panel.className='card';panel.dataset.erpPending='1';
-    panel.innerHTML=`<h2>NFSe aguardando conferência final e lançamento no ERP</h2><p class="meta">${pending.length?`${pending.length} NFSe${pending.length===1?'':'s'} precisa${pending.length===1?'':'m'} da sua ação.`:'Não há NFSe pendente de lançamento no ERP.'}</p>${pending.length?`<div class="table"><table><tr><th>Período</th><th>NFSe</th><th>Valor</th><th>Ações</th></tr>${pending.map(closure=>{const invoice=(invoices||[]).find(item=>item.closure_id===closure.id);return `<tr><td>${erpEsc(closure.period_start)} a ${erpEsc(closure.period_end)}</td><td>${erpEsc(invoice?.invoice_number||'—')}</td><td>${erpMoney(closure.total_value)}</td><td class="actions">${invoice?.storage_path?`<button class="sec" data-erp-download="${erpEsc(invoice.storage_path)}">Baixar NFSe</button>`:''}<button class="pri" data-erp-posted="${erpEsc(closure.id)}">NFSe lançada no ERP</button></td></tr>`;}).join('')}</table></div>`:''}`;
+    panel.innerHTML=`<h2>NFSe aguardando conferência final e lançamento no ERP</h2><p class="meta" data-erp-pending-count>${pending.length?`${pending.length} NFSe${pending.length===1?'':'s'} precisa${pending.length===1?'':'m'} da sua ação.`:'Não há NFSe pendente de lançamento no ERP.'}</p>${pending.length?`<div class="table"><table><thead><tr><th>Período</th><th>NFSe</th><th>Valor</th><th>Ações</th></tr></thead><tbody>${pending.map(closure=>{const invoice=(invoices||[]).find(item=>item.closure_id===closure.id);return `<tr><td>${erpEsc(closure.period_start)} a ${erpEsc(closure.period_end)}</td><td>${erpEsc(invoice?.invoice_number||'—')}</td><td>${erpMoney(closure.total_value)}</td><td class="actions">${invoice?.storage_path?`<button class="sec" data-erp-download="${erpEsc(invoice.storage_path)}">Baixar NFSe</button>`:''}<button class="pri" data-erp-posted="${erpEsc(closure.id)}">NFSe lançada no ERP</button></td></tr>`;}).join('')}</tbody></table></div>`:''}`;
     const grid=document.querySelector('.grid');
     if(grid) grid.insertAdjacentElement('afterend',panel);
     else erpRoot?.prepend(panel);
     panel.querySelectorAll('[data-erp-download]').forEach(button=>button.onclick=async()=>{try{button.disabled=true;await openInvoice(button.dataset.erpDownload);}catch(error){alert(error?.message||String(error));}finally{button.disabled=false;}});
-    panel.querySelectorAll('[data-erp-posted]').forEach(button=>button.onclick=async()=>{try{button.disabled=true;await markErpPosted(button.dataset.erpPosted);}catch(error){button.disabled=false;alert(error?.message||String(error));}});
+    panel.querySelectorAll('[data-erp-posted]').forEach(button=>button.onclick=async()=>{try{button.disabled=true;await markErpPosted(button.dataset.erpPosted);button.closest('tr')?.remove();refreshPendingPanel(panel);alert('NFSe registrada como lançada no ERP.');}catch(error){button.disabled=false;alert(error?.message||String(error));}});
   }catch(error){console.error('Pendências de ERP indisponíveis:',error);}
   finally{erpBusy=false;}
 }

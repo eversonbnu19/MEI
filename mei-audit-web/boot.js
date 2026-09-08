@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v32';
+const APP_VERSION='v33';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -66,6 +66,7 @@ async function signInWithMigration(client,email,password,btn){
 
 async function showAccess(){
   const exists=await companyExists();
+  if(window.__GESTAO_APP_OPENING__) return;
   const signupBlock=exists?'':`<hr style="border:0;border-top:1px solid #e4e7ec;margin:20px 0"><h3>Cadastro inicial</h3><p class="meta">Cadastre a Empresa principal para iniciar o sistema.</p><button class="sec full" id="openCompanySignup">Cadastrar empresa</button>`;
   app.innerHTML=`<div class="login"><div class="card"><h1>Gestão de Contratos</h1>${versionBadge()}<p class="meta">Use seu e-mail e senha para entrar como Empresa, MEI ou Auditoria.</p><div class="field"><label>E-mail</label><input id="accessEmail" type="email" autocomplete="email"></div><div class="field"><label>Senha</label><input id="accessPassword" type="password" autocomplete="current-password"></div><button class="pri full" id="accessBtn">Entrar</button><p class="meta" id="connectionStatus"></p>${signupBlock}</div></div>`;
   document.querySelector('#accessBtn').onclick=async()=>{
@@ -153,25 +154,26 @@ function patchPanelSource(source){
 
 function openApp(){
   if(appOpenPromise) return appOpenPromise;
+  window.__GESTAO_APP_OPENING__=true;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=32',{cache:'no-store'});
+    const response=await fetch('./app.js?v=33',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
     showPanelVersion();
-    import('./patch-direct-users.js?v=32').catch(console.error);
-    import('./patch-company-dashboard.js?v=32').catch(console.error);
-    import('./patch-contract-cancel.js?v=32').catch(console.error);
-    import('./patch-audit-payment.js?v=32').catch(console.error);
-    import('./patch-entry-adjustments.js?v=32').catch(console.error);
-    import('./patch-preclose-review.js?v=32').catch(console.error);
-    import('./patch-notifications.js?v=32').catch(console.error);
-    import('./patch-auditor-erp.js?v=32').catch(console.error);
-    import('./patch-logout-return.js?v=32').catch(console.error);
+    import('./patch-direct-users.js?v=33').catch(console.error);
+    import('./patch-company-dashboard.js?v=33').catch(console.error);
+    import('./patch-contract-cancel.js?v=33').catch(console.error);
+    import('./patch-audit-payment.js?v=33').catch(console.error);
+    import('./patch-entry-adjustments.js?v=33').catch(console.error);
+    import('./patch-preclose-review.js?v=33').catch(console.error);
+    import('./patch-notifications.js?v=33').catch(console.error);
+    import('./patch-auditor-erp.js?v=33').catch(console.error);
+    import('./patch-logout-return.js?v=33').catch(console.error);
   })();
-  appOpenPromise.catch(()=>{appOpenPromise=null;});
+  appOpenPromise.catch(()=>{appOpenPromise=null;window.__GESTAO_APP_OPENING__=false;});
   return appOpenPromise;
 }
 
