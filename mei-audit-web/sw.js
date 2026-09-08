@@ -1,5 +1,5 @@
-const CACHE='gestao-contratos-v31';
-const ASSETS=['./','./index.html','./styles.css','./entry-guard.js','./boot.js','./app.js','./patch-direct-users.js','./patch-company-dashboard.js','./patch-contract-cancel.js','./patch-audit-payment.js','./patch-entry-adjustments.js','./patch-preclose-review.js','./patch-notifications.js','./patch-logout-return.js','./direct-registration.js','./config.js','./manifest.webmanifest'];
+const CACHE='gestao-contratos-v32';
+const ASSETS=['./','./index.html','./styles.css','./entry-guard.js','./boot.js','./app.js','./patch-direct-users.js','./patch-company-dashboard.js','./patch-contract-cancel.js','./patch-audit-payment.js','./patch-entry-adjustments.js','./patch-preclose-review.js','./patch-notifications.js','./patch-auditor-erp.js','./patch-logout-return.js','./direct-registration.js','./config.js','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();

@@ -5,7 +5,8 @@ const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,
 const title:Record<string,Record<string,string>>={
   closure_created:{mei:'Fechamento realizado - emitir NFSe'},
   invoice_sent:{company:'NFSe enviada - aguardando autorização'},
-  sent_to_payment:{auditor:'Pagamento autorizado - NFSe disponível'},
+  sent_to_payment:{auditor:'NFSe liberada para conferência final e lançamento no ERP'},
+  erp_posted:{company:'NFSe lançada no ERP'},
   // Mantido apenas para que reenvios do histórico v30 continuem possíveis.
   invoice_received:{auditor:'NFSe disponível para conferência'}
 };
@@ -48,11 +49,16 @@ Deno.serve(async request=>{
     if(!previous) return json({error:'Notificação não localizada'},404);
     event=previous.event; closureId=previous.closure_id; retryNotification=previous;
   }
-  if(!['closure_created','invoice_sent','sent_to_payment','invoice_received'].includes(event||'')||!closureId) return json({error:'Evento ou fechamento inválido'},400);
+  if(!['closure_created','invoice_sent','sent_to_payment','erp_posted','invoice_received'].includes(event||'')||!closureId) return json({error:'Evento ou fechamento inválido'},400);
   const {data:closure}=await admin.from('mei_closures').select('id,company_id,mei_id,period_start,period_end,total_value,mei_contracts(code,service)').eq('id',closureId).single();
   if(!closure) return json({error:'Fechamento não encontrado'},404);
   const {data:isCompany}=await admin.from('mei_company_users').select('user_id').eq('company_id',closure.company_id).eq('user_id',user.id).maybeSingle();
-  const authorized=(event==='closure_created'||event==='sent_to_payment'||event==='invoice_received')?Boolean(isCompany):event==='invoice_sent'&&closure.mei_id===user.id;
+  const {data:isAuditor}=await admin.from('mei_company_auditors').select('user_id').eq('company_id',closure.company_id).eq('user_id',user.id).maybeSingle();
+  const authorized=(event==='closure_created'||event==='sent_to_payment'||event==='invoice_received')
+    ? Boolean(isCompany)
+    : event==='erp_posted'
+      ? Boolean(isAuditor)
+      : event==='invoice_sent'&&closure.mei_id===user.id;
   if(!authorized) return json({error:'Evento não autorizado'},403);
 
   const {data:invoice}=await admin.from('mei_invoices').select('invoice_number,issue_date').eq('closure_id',closure.id).maybeSingle();
@@ -61,19 +67,25 @@ Deno.serve(async request=>{
   const ids=[closure.mei_id,...(companyMembers||[]).map(x=>x.user_id),...(auditors||[]).map(x=>x.user_id)];
   const {data:people}=await admin.from('mei_profiles').select('id,name,email,role').in('id',ids);
   const byId=new Map((people||[]).map(x=>[x.id,x]));
-  const chooseRecipient=(role:string,userIds:string[])=>userIds.map(id=>byId.get(id)).filter((person):person is {id:string,name:string|null,email:string,role:string}=>Boolean(person?.email)).sort((a,b)=>String(a.name||a.email).localeCompare(String(b.name||b.email),'pt-BR'))[0]||null;
+  const eligiblePeople=(userIds:string[])=>userIds.map(id=>byId.get(id)).filter((person):person is {id:string,name:string|null,email:string,role:string}=>Boolean(person?.email)).sort((a,b)=>String(a.name||a.email).localeCompare(String(b.name||b.email),'pt-BR'));
   const recipient=retryNotification
     ? [...byId.values()].find(person=>person.email===retryNotification!.email)||{name:retryNotification.email,email:retryNotification.email,role:retryNotification.recipient_role}
     : event==='closure_created'
-      ? chooseRecipient('mei',[closure.mei_id])
+      ? eligiblePeople([closure.mei_id])[0]||null
       : event==='invoice_sent'
-        ? chooseRecipient('company',(companyMembers||[]).map(x=>x.user_id))
-        : chooseRecipient('auditor',(auditors||[]).map(x=>x.user_id));
+        ? eligiblePeople((companyMembers||[]).map(x=>x.user_id))[0]||null
+        : event==='erp_posted'
+          ? eligiblePeople((companyMembers||[]).map(x=>x.user_id))[0]||null
+          : null;
+  const recipients=retryNotification
+    ? [recipient].filter(Boolean)
+    : event==='sent_to_payment'
+      ? eligiblePeople((auditors||[]).map(x=>x.user_id))
+      : [recipient].filter(Boolean);
   const mailFrom=Deno.env.get('MAIL_FROM'); const resendKey=Deno.env.get('RESEND_API_KEY');
   if(!mailFrom||!resendKey) return json({error:'Serviço de e-mail não configurado'},503);
   const results=[];
-  if(recipient?.email){
-    const person=recipient;
+  for(const person of recipients){
     const recipientRole=retryNotification?.recipient_role||person.role;
     const recipientName=person.name||person.email;
     const subject=`${recipientName} // ${profile.name||profile.email} // Fechamento ${formatDate(closure.period_start)} a ${formatDate(closure.period_end)} // ${title[event!][recipientRole]}`;

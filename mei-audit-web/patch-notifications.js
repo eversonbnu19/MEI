@@ -1,13 +1,14 @@
-// v31: a notificação é deliberadamente assíncrona: um problema de e-mail nunca reverte o fechamento/NF.
+// v32: a notificação é deliberadamente assíncrona: um problema de e-mail nunca reverte o fechamento/NF.
 const sb=window.__GESTAO_SB__;
-const EVENTS={mei_close_period:'closure_created',mei_register_invoice:'invoice_sent',mei_send_to_payment:'sent_to_payment'};
+const EVENTS={mei_close_period:'closure_created',mei_register_invoice:'invoice_sent',mei_send_to_payment:'sent_to_payment',mei_mark_erp_posted:'erp_posted'};
 
 function notify(event,closureId){
   if(!closureId) return;
-  sb.functions.invoke('mei-send-notification',{body:{action:'dispatch',event,closure_id:closureId}})
+  return sb.functions.invoke('mei-send-notification',{body:{action:'dispatch',event,closure_id:closureId}})
     .then(({error})=>{if(error)console.warn('Notificação registrada como falha:',error.message);})
     .catch(error=>console.warn('Notificação indisponível:',error.message));
 }
+window.__GESTAO_NOTIFY__=notify;
 
 const originalRpc=sb.rpc.bind(sb);
 sb.rpc=async(name,args,...rest)=>{
