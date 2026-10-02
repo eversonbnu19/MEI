@@ -24,4 +24,6 @@ jobs:
         with:
           node-version: '22'
       - name: Executar verificacoes
-        run: node mei-audit-web/tests/static-checks.mjs
+        run: |
+          node mei-audit-web/tests/static-checks.mjs
+          node --test mei-audit-web/tests/preclose-review.test.mjs
