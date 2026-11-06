@@ -157,7 +157,7 @@ async function renderCompany(){
   if(emailOwner?.user_id===profile.id) tabs.push(['configuracoes','Configurações']);
   if(tab==='configuracoes'){
     if(emailOwner?.user_id!==profile.id) throw new Error('Somente a Empresa principal pode acessar Configurações.');
-    const {mountSettings}=await import(new URL('./settings-home.js?v=37',window.location.href).href);
+    const {mountSettings}=await import(new URL('./settings-home.js?v=38',window.location.href).href);
     return mountSettings({sb,cid,shell,tabs});
   }
   if(tab==='usuarios') return companyUsers(tabs,cid);
@@ -167,7 +167,7 @@ async function renderCompany(){
   const people=await sb.rpc('mei_company_people',{p_company:cid});
   shell(`<div class="grid"><div class="card kpi"><small>Usuários vinculados</small><strong>${people.data?.length||0}</strong></div><div class="card kpi"><small>Contratos</small><strong>${cs.length}</strong></div><div class="card kpi"><small>Aguardando NF</small><strong>${cl.filter(x=>x.status==='awaiting_invoice').length}</strong></div><div class="card kpi"><small>Total fechado</small><strong>${brl(cl.reduce((s,x)=>s+Number(x.total_value),0))}</strong></div></div><div class="card"><h2>Fluxo seguro de cadastro</h2><p>1. A empresa é o cadastro principal.</p><p>2. A empresa envia convites por e-mail para MEIs e Auditoria.</p><p>3. Cada convidado aceita o convite e passa a enxergar somente os dados desta empresa.</p></div>`,tabs);
   if(emailOwner?.user_id===profile.id){
-    try{const {mountPendingReminder}=await import(new URL('./closure-reminders.js?v=37',window.location.href).href);await mountPendingReminder({sb,cid});}catch(e){console.warn('Aviso de fechamento indisponível',e);}
+    try{const {mountPendingReminder}=await import(new URL('./closure-reminders.js?v=38',window.location.href).href);await mountPendingReminder({sb,cid});}catch(e){console.warn('Aviso de fechamento indisponível',e);}
   }
 }
 async function companyUsers(tabs,cid){

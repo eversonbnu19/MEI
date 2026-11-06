@@ -1,5 +1,5 @@
-import {mountEmailSettings} from './email-settings.js?v=37';
-import {mountClosureReminders} from './closure-reminders.js?v=37';
+import {mountEmailSettings} from './email-settings.js?v=38';
+import {mountClosureReminders} from './closure-reminders.js?v=38';
 export async function mountSettings(options){
  async function show(section){
   const wrapped={...options,shell(content,tabs){
