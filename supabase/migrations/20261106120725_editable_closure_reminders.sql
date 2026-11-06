@@ -112,7 +112,7 @@ AS $function$
  and (o.initial_sent_date is null or (o.followup_sent_date is null and p_today>=o.initial_sent_date+3))
  group by o.id,c.id,c.code,c.service,p.name
  )q;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.mei_pending_closure_reminders(p_company uuid)
  RETURNS jsonb
@@ -133,7 +133,7 @@ begin
  and (coalesce(e.ended_at,e.started_at) at time zone 'America/Sao_Paulo')::date between o.period_start and o.period_end
  where s.deleted_at is null and o.due_date>=coalesce(s.binding_from,s.effective_from) and o.company_id=p_company and o.due_date<=(now() at time zone 'America/Sao_Paulo')::date group by o.id,c.id,c.code,p.name
  )q),'[]'::jsonb);
-end $function$
+end $function$;
 
 CREATE OR REPLACE FUNCTION public.mei_reminder_worker(p_action text, p_run uuid, p_payload jsonb DEFAULT '{}'::jsonb)
  RETURNS jsonb
@@ -199,7 +199,6 @@ begin
   return jsonb_build_object('ok',true);
  end if;
  raise exception 'Ação inválida';
-end $function$
-
+end $function$;
 
 notify pgrst, 'reload schema';

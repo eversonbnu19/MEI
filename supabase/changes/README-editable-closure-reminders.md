@@ -22,3 +22,6 @@ A RPC anterior continua disponível para abas antigas, delegando à mesma valida
 - Conferência em navegador com dados fictícios: seleção por contrato ativo, troca mantendo datas, ativação/desativação e exclusão com histórico preservado.
 
 Aplicar o banco somente após CI aprovado, executar testes com rollback, atualizar mei-closure-reminders com o calendário revisado e publicar v38. O agendamento existente permanece em funcionamento. O CLI Supabase está ausente; arquivar a migração com a versão efetivamente registrada pelo serviço.
+
+## Resultado da validação no ambiente
+Migração registrada como 20261106120725_editable_closure_reminders. O teste transacional de inclusão/troca/exclusão e o teste anterior de fechamento passaram. Rollback confirmado: nenhuma configuração, ocorrência, entrega ou auditoria de teste permaneceu. O agendamento existente continuou ativo. A confirmação de exclusão é feita na própria tela; a conferência no navegador verificou que somente contratos ativos por hora são oferecidos e que o histórico original continua disponível após excluir.
