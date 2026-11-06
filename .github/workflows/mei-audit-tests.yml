@@ -30,3 +30,4 @@ jobs:
           node mei-audit-web/tests/static-checks.mjs
           node --test mei-audit-web/tests/preclose-review.test.mjs
           node mei-audit-web/tests/email-settings.test.mjs
+          node mei-audit-web/tests/closure-reminders.test.mjs

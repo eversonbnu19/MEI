@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v36.1';
+const APP_VERSION='v37';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -132,7 +132,7 @@ function patchPanelSource(source){
   window.__GESTAO_AFTER_LOGIN_PROMISE__=(async()=>{
     await loadProfile();
     if(!profile) throw new Error('Perfil do usuário não encontrado.');
-    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){tab='inicio';await render();return;}
+    if(window.__GESTAO_AFTER_LOGIN_USER__===profile.id){tab=new URLSearchParams(location.search).get('aba')==='fechamentos'&&profile.role==='company'?'fechamentos':'inicio';await render();return;}
     const d={user_agent:navigator.userAgent,platform:navigator.platform||'',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
     try{
       const sessionResult=await Promise.race([
@@ -144,7 +144,7 @@ function patchPanelSource(source){
     }catch(e){sessionId=null;console.warn('Sessão de auditoria não bloqueou o acesso:',e);}
     Promise.resolve(audit('login','access_session',sessionId,d)).catch(e=>console.warn('Auditoria de login indisponível:',e));
     window.__GESTAO_AFTER_LOGIN_USER__=profile.id;
-    tab='inicio';
+    tab=new URLSearchParams(location.search).get('aba')==='fechamentos'&&profile.role==='company'?'fechamentos':'inicio';
     await render();
   })();
   try{return await window.__GESTAO_AFTER_LOGIN_PROMISE__;}finally{window.__GESTAO_AFTER_LOGIN_PROMISE__=null;}
@@ -158,21 +158,21 @@ function openApp(){
   window.__GESTAO_APP_OPENING__=true;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=36.1',{cache:'no-store'});
+    const response=await fetch('./app.js?v=37',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
     showPanelVersion();
-    import('./patch-direct-users.js?v=36.1').catch(console.error);
-    import('./patch-company-dashboard.js?v=36.1').catch(console.error);
-    import('./patch-contract-cancel.js?v=36.1').catch(console.error);
-    import('./patch-audit-payment.js?v=36.1').catch(console.error);
-    import('./patch-entry-adjustments.js?v=36.1').catch(console.error);
-    import('./patch-preclose-review.js?v=36.1').catch(console.error);
-    import('./patch-notifications.js?v=36.1').catch(console.error);
-    import('./patch-auditor-erp.js?v=36.1').catch(console.error);
-    import('./patch-logout-return.js?v=36.1').catch(console.error);
+    import('./patch-direct-users.js?v=37').catch(console.error);
+    import('./patch-company-dashboard.js?v=37').catch(console.error);
+    import('./patch-contract-cancel.js?v=37').catch(console.error);
+    import('./patch-audit-payment.js?v=37').catch(console.error);
+    import('./patch-entry-adjustments.js?v=37').catch(console.error);
+    import('./patch-preclose-review.js?v=37').catch(console.error);
+    import('./patch-notifications.js?v=37').catch(console.error);
+    import('./patch-auditor-erp.js?v=37').catch(console.error);
+    import('./patch-logout-return.js?v=37').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;window.__GESTAO_APP_OPENING__=false;});
   return appOpenPromise;

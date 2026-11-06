@@ -7,7 +7,7 @@ const base=new URL('../../',import.meta.url);
 export async function runEmailTests(){
  let checks=0;
  const check=(condition,message)=>{assert.ok(condition,message);checks++;};
- check(core.CATALOG.length===7,'Todos os sete modelos');
+ check(core.CATALOG.length===8,'Todos os oito modelos');
  for(const m of core.CATALOG){
   const rendered=core.renderTemplate(m,core.EXAMPLE);
   check(!rendered.subject.includes('{{')&&!rendered.html.includes('{{'),'Substituição completa: '+m.event);
