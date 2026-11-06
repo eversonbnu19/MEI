@@ -183,3 +183,8 @@ begin
 end $$;
 revoke all on function public.mei_reserve_email_test(uuid,text,text) from public,anon;
 grant execute on function public.mei_reserve_email_test(uuid,text,text) to authenticated;
+
+-- Override Supabase default grants, including TRUNCATE/TRIGGER/REFERENCES.
+revoke all on public.mei_email_owners,public.mei_email_defaults,public.mei_email_templates,public.mei_email_template_audit,public.mei_email_tests from public,anon,authenticated;
+grant select on public.mei_email_owners,public.mei_email_defaults,public.mei_email_templates,public.mei_email_template_audit,public.mei_email_tests to authenticated;
+revoke all on sequence public.mei_email_template_audit_id_seq from public,anon,authenticated;
