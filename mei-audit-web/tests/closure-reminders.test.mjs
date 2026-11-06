@@ -26,6 +26,10 @@ export async function runReminderTests(){
  check(calendar.localDate('2026-11-07T01:00:00Z')==='2026-11-06','Data de Brasília');
  const year=calendar.periods({...schedule,effective_from:'2026-12-01'},'2027-02-01');
  check(year.some(p=>p.period_start==='2026-12-01'&&p.due_date==='2027-01-01'),'Virada de ano');
+ const moved={...schedule,binding_from:'2026-11-06'};
+ check(calendar.periods(moved,'2026-11-06').length===0,'Troca não gera avisos retroativos');
+ check(calendar.nextPeriods(moved,'2026-11-06')[0].due_date==='2026-12-01','Troca preserva o próximo aviso mensal');
+ check(calendar.periods({...schedule,binding_from:'2026-10-15'},'2026-11-01').some(p=>p.due_date==='2026-11-01'),'Vínculo vigente permite aviso futuro');
  const text=calendar.summaryText([{contract_code:'CT-1',mei_name:'Maria',period_start:'2026-10-01',period_end:'2026-10-31',total_hours:80,open_entries:1,stage:'followup'}]);
  check(text.includes('80')&&text.includes('sem saída')&&text.includes('Reforço após 3 dias'),'Resumo de horas e reforço');
  const mail=core.renderTemplate(core.definition('closure_reminder','company'),{...core.EXAMPLE,lista_contratos_pendentes:'<img src=x>\nCT-2'});

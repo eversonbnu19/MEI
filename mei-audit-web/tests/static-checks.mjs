@@ -17,19 +17,19 @@ const auditorErp=read('patch-auditor-erp.js');
 const guard=read('entry-guard.js');
 const sw=read('sw.js');
 
-assert.match(index,/Gestão de Contratos v37/,'index deve identificar visualmente a versao v37');
-assert.match(index,/boot\.js\?v=37/,'index deve carregar boot v37');
-assert.match(index,/entry-guard\.js\?v=37/,'index deve carregar guarda de entrada v37');
-assert.match(boot,/const APP_VERSION='v37'/,'boot deve declarar v37');
+assert.match(index,/Gestão de Contratos v38/,'index deve identificar visualmente a versao v38');
+assert.match(index,/boot\.js\?v=38/,'index deve carregar boot v38');
+assert.match(index,/entry-guard\.js\?v=38/,'index deve carregar guarda de entrada v38');
+assert.match(boot,/const APP_VERSION='v38'/,'boot deve declarar v38');
 assert.match(boot,/mei-company-status/,'entrada deve consultar se a empresa principal ja existe');
 assert.match(boot,/const signupBlock=exists\?'':/,'cadastro inicial deve aparecer apenas quando nao existe empresa');
 assert.match(boot,/if\(await companyExists\(\)\)/,'rota de cadastro deve bloquear quando empresa ja existe');
 assert.match(boot,/return true;/,'falha na verificacao deve ocultar cadastro por seguranca');
-assert.match(boot,/app\.js\?v=37/,'boot deve carregar app v37');
-assert.match(boot,/patch-preclose-review\.js\?v=37/,'boot deve carregar pre-conferencia v37');
-assert.match(boot,/patch-notifications\.js\?v=37/,'boot deve carregar notificações v37');
-assert.match(boot,/patch-auditor-erp\.js\?v=37/,'boot deve carregar pendências de ERP v37');
-assert.match(boot,/patch-logout-return\.js\?v=37/,'boot deve carregar hotfix de logout v37');
+assert.match(boot,/app\.js\?v=38/,'boot deve carregar app v38');
+assert.match(boot,/patch-preclose-review\.js\?v=38/,'boot deve carregar pre-conferencia v38');
+assert.match(boot,/patch-notifications\.js\?v=38/,'boot deve carregar notificações v38');
+assert.match(boot,/patch-auditor-erp\.js\?v=38/,'boot deve carregar pendências de ERP v38');
+assert.match(boot,/patch-logout-return\.js\?v=38/,'boot deve carregar hotfix de logout v38');
 assert.match(app,/navigator\.geolocation\.getCurrentPosition/,'registro por hora deve solicitar GPS');
 assert.match(app,/maximumAge:0/,'registro deve rejeitar localização em cache');
 assert.match(app,/p_latitude:gps\.latitude/,'entrada deve enviar coordenada ao servidor');
@@ -64,13 +64,13 @@ assert.doesNotMatch(auditorErp,/location\.reload/,'confirmação no ERP não dev
 assert.doesNotMatch(auditorErp,/__GESTAO_NOTIFY__/,'confirmação no ERP deve usar apenas o disparo global');
 assert.match(auditorErp,/refreshPendingPanel/,'confirmação no ERP deve atualizar a pendência em tela');
 assert.match(boot,/window\.__GESTAO_APP_OPENING__/,'inicialização deve impedir que login sobrescreva sessão restaurada');
-assert.match(sw,/gestao-contratos-v37/,'service worker deve usar cache v37');
+assert.match(sw,/gestao-contratos-v38/,'service worker deve usar cache v38');
 assert.match(sw,/patch-notifications\.js/,'service worker deve incluir notificações');
 assert.match(sw,/patch-auditor-erp\.js/,'service worker deve incluir pendências de ERP');
 assert.match(sw,/patch-preclose-review\.js/,'service worker deve incluir a pré-conferência');
 assert.match(sw,/patch-logout-return\.js/,'service worker deve incluir hotfix de logout');
 
-console.log('OK - v37: verificações estáticas aprovadas.');
+console.log('OK - v38: verificações estáticas aprovadas.');
 
 const patchFunction=boot.slice(boot.indexOf('function patchPanelSource('),boot.indexOf('function openApp('));
 for(const source of [app.replace(/\r\n?/g,'\n'),app.replace(/\r\n?/g,'\n').replace(/\n/g,'\r\n')]){

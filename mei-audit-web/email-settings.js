@@ -1,4 +1,4 @@
-import {CATALOG,FIELDS,EXAMPLE,escapeHtml as esc,warnings,validateTemplate,renderTemplate} from './email-core.mjs?v=37';
+import {CATALOG,FIELDS,EXAMPLE,escapeHtml as esc,warnings,validateTemplate,renderTemplate} from './email-core.mjs?v=38';
 const roles={company:'Empresa',mei:'MEI',auditor:'Auditoria'};
 export async function mountEmailSettings({sb,cid,shell,tabs}){
  const {data:owner,error:ownerError}=await sb.from('mei_email_owners').select('user_id').eq('company_id',cid).maybeSingle();

@@ -14,7 +14,8 @@ export function validateSchedule(s){
 }
 export function periods(s,until,{future=false}={}){
  validateSchedule(s);
- const from=parse(s.effective_from),limit=parse(future&&until<s.effective_from?s.effective_from:until);
+ const effective=s.binding_from&&s.binding_from>s.effective_from?s.binding_from:s.effective_from;
+ const from=parse(effective),limit=parse(future&&until<effective?effective:until);
  if(limit<from)return [];
  const firstMonth=new Date(Date.UTC(from.getUTCFullYear(),from.getUTCMonth()-2,1,12));
  const lastMonth=new Date(Date.UTC(limit.getUTCFullYear(),limit.getUTCMonth()+(future?2:0),1,12));
@@ -29,7 +30,7 @@ export function periods(s,until,{future=false}={}){
    const notify=i===0?s.notify_day_one:s.notify_day_two;
    let due=monthDate(y,m,notify);
    if(due<=end)due=monthDate(y,m+1,notify);
-   if(due>=s.effective_from&&(future||due<=until))result.push({period_start:start,period_end:end,due_date:due});
+   if(due>=effective&&(future||due<=until))result.push({period_start:start,period_end:end,due_date:due});
   });
  }
  return result.sort((a,b)=>a.due_date.localeCompare(b.due_date)||a.period_end.localeCompare(b.period_end));

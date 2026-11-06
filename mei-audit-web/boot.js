@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v37';
+const APP_VERSION='v38';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -158,21 +158,21 @@ function openApp(){
   window.__GESTAO_APP_OPENING__=true;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=37',{cache:'no-store'});
+    const response=await fetch('./app.js?v=38',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
     showPanelVersion();
-    import('./patch-direct-users.js?v=37').catch(console.error);
-    import('./patch-company-dashboard.js?v=37').catch(console.error);
-    import('./patch-contract-cancel.js?v=37').catch(console.error);
-    import('./patch-audit-payment.js?v=37').catch(console.error);
-    import('./patch-entry-adjustments.js?v=37').catch(console.error);
-    import('./patch-preclose-review.js?v=37').catch(console.error);
-    import('./patch-notifications.js?v=37').catch(console.error);
-    import('./patch-auditor-erp.js?v=37').catch(console.error);
-    import('./patch-logout-return.js?v=37').catch(console.error);
+    import('./patch-direct-users.js?v=38').catch(console.error);
+    import('./patch-company-dashboard.js?v=38').catch(console.error);
+    import('./patch-contract-cancel.js?v=38').catch(console.error);
+    import('./patch-audit-payment.js?v=38').catch(console.error);
+    import('./patch-entry-adjustments.js?v=38').catch(console.error);
+    import('./patch-preclose-review.js?v=38').catch(console.error);
+    import('./patch-notifications.js?v=38').catch(console.error);
+    import('./patch-auditor-erp.js?v=38').catch(console.error);
+    import('./patch-logout-return.js?v=38').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;window.__GESTAO_APP_OPENING__=false;});
   return appOpenPromise;
