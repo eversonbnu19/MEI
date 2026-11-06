@@ -25,9 +25,16 @@ O fluxo atual cadastra usuários diretamente e confirma o e-mail no servidor, se
 
 ## Publicação
 1. Executar testes estáticos, pré-fechamento e e-mails em Node 24; aguardar CI aprovado na branch.
-2. Aplicar email_settings.sql pelo Supabase e validar permissões, salvamento, restauração e auditoria em transação revertida.
+2. Aplicar supabase/migrations/20261106102523_email_settings.sql pelo Supabase e validar permissões, salvamento, restauração e auditoria em transação revertida.
 3. Publicar mei-send-notification e mei-invite-user com _shared/email.ts e mei-audit-web/email-core.mjs, JWT mantido ativo.
 4. Integrar a branch na main. O workflow de Pages repete os testes antes de publicar.
 5. Verificar v36 no site e funções ativas. Novos módulos estão no service worker; fallback local ignora apenas parâmetros de versão, sem armazenar dados do Supabase.
 
 Em falha de publicação das funções, não integrar o frontend. Os modelos padrão mantêm os eventos/destinatários e a fila de notificação atual. Para reverter, restaurar os arquivos anteriores das funções/frontend; as novas tabelas podem permanecer para preservar a auditoria.
+
+## Validação da publicação
+CI aprovado: verificações estáticas v36, oito testes de pré-fechamento e 50 verificações de e-mails. Teste transacional email_settings_test.sql aprovado no banco, com rollback confirmado (zero modelos personalizados, testes ou registros de auditoria remanescentes). Removidos todos os privilégios de escrita direta do cliente, inclusive TRUNCATE. Funções publicadas com verificação JWT ativa.
+
+As duas RPCs públicas usam SECURITY DEFINER para gravar exclusivamente pelas operações autorizadas, com auth.uid(), titular e perfil Empresa verificados internamente, search_path vazio e execução anônima revogada. O aviso do advisor para execução autenticada é esperado neste desenho e foi validado com tentativas de usuário secundário e sessão ausente.
+
+O CLI Supabase não está instalado neste ambiente. O nome de migração versionado foi obtido da migração efetivamente registrada pelo serviço (20261106102523).
