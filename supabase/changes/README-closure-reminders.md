@@ -23,7 +23,7 @@ Uma lease impede execuções concorrentes. Entregas guardam destinatário, conte
 Node 24: verificações estáticas e carregamento LF/CRLF, oito testes de pré-fechamento, 52 verificações de e-mails e 32 de lembretes. A tela é conferida no navegador com dados fictícios, incluindo quinzenas personalizadas e troca para o editor de e-mails.
 
 1. CI aprovado na branch.
-2. Aplicar closure_reminders.sql; o Cron nasce desativado.
+2. Aplicar as migrações 20261106110338_closure_reminders.sql e 20261106110410_closure_reminders_validation_fix.sql; o Cron nasce desativado.
 3. Rodar closure_reminders_test.sql em transação revertida e conferir que as linhas de teste não persistiram.
 4. Publicar mei-closure-reminders e atualizar os pacotes de mei-send-notification e mei-invite-user com email-core.mjs/_shared/email.ts novos.
 5. Verificar autenticação do processador e a chamada interna pelo Vault, sem expor o segredo.
@@ -31,3 +31,8 @@ Node 24: verificações estáticas e carregamento LF/CRLF, oito testes de pré-f
 7. Conferir a versão v37 no site.
 
 O CLI Supabase está ausente neste ambiente; após aplicar a migração pelo serviço, arquivar o SQL com a versão efetivamente registrada. O teste de integração usa linhas descartáveis e rollback; não envia e-mails.
+
+## Resultado no ambiente
+Teste transacional aprovado no banco e rollback confirmado: zero configurações, ocorrências, entregas e auditorias de teste remanescentes. A expressão de validação JSON foi corrigida antes da ativação do job e o teste foi repetido com sucesso. A chamada sem token do processador foi recusada (401); a chamada interna usa o segredo no Vault, sem expor seu conteúdo.
+
+A tabela de lease fica em schema privado, com RLS sem políticas e sem acesso de clientes por intenção (negação total). As duas RPCs autenticadas verificam titular e perfil internamente; execução anônima e execução do processador por usuários comuns permanecem revogadas.
