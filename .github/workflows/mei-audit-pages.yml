@@ -26,11 +26,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Validar antes de publicar
         run: |
           node mei-audit-web/tests/static-checks.mjs
           node --test mei-audit-web/tests/preclose-review.test.mjs
+          node mei-audit-web/tests/email-settings.test.mjs
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact

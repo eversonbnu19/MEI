@@ -45,7 +45,7 @@ function shell(content,tabs=[]){
   const roleLabel=profile.role==='mei'?'Execução mobile':profile.role==='company'?'Gestão da empresa':'Auditoria da empresa';
   app.innerHTML=`<header class="top"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id="logout" class="sec">Sair</button></div></header><main class="wrap ${profile.role==='mei'?'mei-mobile':''}">${tabs.length?`<nav class="tabs">${tabs.map(x=>`<button data-tab="${x[0]}" class="${tab===x[0]?'active':''}">${x[1]}</button>`).join('')}</nav>`:''}${content}</main>`;
   document.querySelector('#logout').onclick=logout;
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(document.querySelector('.email-model[data-dirty="true"]')&&!confirm('Há mensagens não salvas. Sair sem salvar?'))return;tab=b.dataset.tab;render();});
 }
 
 async function loginView(){
@@ -152,6 +152,14 @@ async function companyBase(){
 async function renderCompany(){
   const tabs=[['inicio','Painel'],['usuarios','Usuários'],['contratos','Contratos'],['fechamentos','Fechamentos / NFs']];
   const cid=await companyBase();
+  const {data:emailOwner,error:emailOwnerError}=await sb.from('mei_email_owners').select('user_id').eq('company_id',cid).maybeSingle();
+  if(emailOwnerError) console.warn('Configurações indisponíveis',emailOwnerError);
+  if(emailOwner?.user_id===profile.id) tabs.push(['configuracoes','Configurações']);
+  if(tab==='configuracoes'){
+    if(emailOwner?.user_id!==profile.id) throw new Error('Somente a Empresa principal pode acessar Configurações.');
+    const {mountEmailSettings}=await import(new URL('./email-settings.js?v=36',window.location.href).href);
+    return mountEmailSettings({sb,cid,shell,tabs});
+  }
   if(tab==='usuarios') return companyUsers(tabs,cid);
   if(tab==='contratos') return companyContracts(tabs,cid);
   if(tab==='fechamentos') return companyClosures(tabs,cid);

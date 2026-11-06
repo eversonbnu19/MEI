@@ -1,19 +1,13 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { contentFor, sendMail, definition, renderTemplate } from '../_shared/email.ts';
+import {EXAMPLE,validateTemplate} from '../../../mei-audit-web/email-core.mjs';
+import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type'};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json'}});
-const title:Record<string,Record<string,string>>={
-  closure_created:{mei:'Fechamento realizado - emitir NFSe'},
-  invoice_sent:{company:'NFSe enviada - aguardando autorização'},
-  sent_to_payment:{auditor:'NFSe liberada para conferência final e lançamento no ERP'},
-  erp_posted:{company:'NFSe lançada no ERP'},
-  // Mantido apenas para que reenvios do histórico v30 continuem possíveis.
-  invoice_received:{auditor:'NFSe disponível para conferência'}
-};
-function escapeHtml(value:unknown){return String(value??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));}
 function formatDate(value:string){return new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo'}).format(new Date(`${value}T12:00:00Z`));}
 
 Deno.serve(async request=>{
+  try{
   if(request.method==='OPTIONS') return new Response('ok',{headers:cors});
   if(request.method!=='POST') return json({error:'Método não permitido'},405);
   const auth=request.headers.get('Authorization');
@@ -28,6 +22,28 @@ Deno.serve(async request=>{
   const body=await request.json().catch(()=>({}));
   const {data:profile}=await admin.from('mei_profiles').select('id,role,name,email').eq('id',user.id).single();
   if(!profile) return json({error:'Perfil não encontrado'},403);
+
+
+  if(body.action==='test_template'){
+    const model=definition(body.event,body.recipient_role);
+    if(!model) return json({error:'Modelo inválido'},400);
+    try{
+      validateTemplate(body.subject,body.body);
+      const {data:testId,error:reserveError}=await userClient.rpc('mei_reserve_email_test',{p_company:body.company_id,p_event:body.event,p_role:body.recipient_role});
+      if(reserveError)return json({error:reserveError.message},reserveError.code==='42501'?403:429);
+      if(!user.email) return json({error:'Seu acesso não possui e-mail confirmado'},400);
+      try{
+        const rendered=renderTemplate({subject:body.subject,body:body.body},EXAMPLE);
+        const payload=await sendMail(user.email,{...rendered,subject:'[TESTE] '+rendered.subject});
+        const {error:logError}=await admin.from('mei_email_tests').update({status:'sent',provider_message_id:payload.id||null}).eq('id',testId);
+        if(logError)throw logError;
+        return json({ok:true,email:user.email});
+      }catch(error){
+        await admin.from('mei_email_tests').update({status:'failed',error:String(error?.message||error).slice(0,1000)}).eq('id',testId);
+        return json({error:'Falha ao enviar o teste. Consulte o histórico de testes ou tente novamente.'},502);
+      }
+    }catch(error){return json({error:String(error?.message||error)},400);}
+  }
 
   if(body.action==='list'){
     const [{data:meiClosures},{data:companyUsers},{data:audits}]=await Promise.all([
@@ -50,7 +66,7 @@ Deno.serve(async request=>{
     event=previous.event; closureId=previous.closure_id; retryNotification=previous;
   }
   if(!['closure_created','invoice_sent','sent_to_payment','erp_posted','invoice_received'].includes(event||'')||!closureId) return json({error:'Evento ou fechamento inválido'},400);
-  const {data:closure}=await admin.from('mei_closures').select('id,company_id,mei_id,period_start,period_end,total_value,mei_contracts(code,service)').eq('id',closureId).single();
+  const {data:closure}=await admin.from('mei_closures').select('id,company_id,mei_id,period_start,period_end,total_value,status,mei_contracts(code,service)').eq('id',closureId).single();
   if(!closure) return json({error:'Fechamento não encontrado'},404);
   const {data:isCompany}=await admin.from('mei_company_users').select('user_id').eq('company_id',closure.company_id).eq('user_id',user.id).maybeSingle();
   const {data:isAuditor}=await admin.from('mei_company_auditors').select('user_id').eq('company_id',closure.company_id).eq('user_id',user.id).maybeSingle();
@@ -82,13 +98,14 @@ Deno.serve(async request=>{
     : event==='sent_to_payment'
       ? eligiblePeople((auditors||[]).map(x=>x.user_id))
       : [recipient].filter(Boolean);
-  const mailFrom=Deno.env.get('MAIL_FROM'); const resendKey=Deno.env.get('RESEND_API_KEY');
-  if(!mailFrom||!resendKey) return json({error:'Serviço de e-mail não configurado'},503);
+  const resendKey=Deno.env.get('RESEND_API_KEY');
+  if(!resendKey) return json({error:'Serviço de e-mail não configurado'},503);
   const results=[];
   for(const person of recipients){
     const recipientRole=retryNotification?.recipient_role||person.role;
     const recipientName=person.name||person.email;
-    const subject=`${recipientName} // ${profile.name||profile.email} // Fechamento ${formatDate(closure.period_start)} a ${formatDate(closure.period_end)} // ${title[event!][recipientRole]}`;
+    const template=await contentFor(admin,closure.company_id,event!,recipientRole);
+    const {data:company}=await admin.from('mei_companies').select('name').eq('id',closure.company_id).single();
     const attemptResult=await admin.from('mei_notifications').select('attempt').eq('closure_id',closure.id).eq('event',event!).eq('email',person.email).order('attempt',{ascending:false}).limit(1).maybeSingle();
     const attempt=(attemptResult.data?.attempt||0)+1;
     const {data:notification,error:notificationError}=await admin.from('mei_notifications').insert({closure_id:closure.id,event,recipient_role:recipientRole,email:person.email,attempt,status:'pending'}).select('id').single();
@@ -99,10 +116,9 @@ Deno.serve(async request=>{
       throw notificationError;
     }
     const contract=(closure.mei_contracts as {code?:string,service?:string}|null)||{};
-    const html=`<p>Olá, ${escapeHtml(recipientName)}.</p><p>${escapeHtml(title[event!][recipientRole])}.</p><p><b>Contrato:</b> ${escapeHtml(contract.code)} — ${escapeHtml(contract.service)}<br><b>Período:</b> ${formatDate(closure.period_start)} a ${formatDate(closure.period_end)}<br><b>Valor do fechamento:</b> R$ ${Number(closure.total_value||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}${invoice?`<br><b>NFSe:</b> ${escapeHtml(invoice.invoice_number)}`:''}</p><p>Esta mensagem foi gerada automaticamente pelo sistema Gestão de Contratos.</p>`;
+    const rendered=renderTemplate(template,{nome_destino:recipientName,nome_origem:profile.name||profile.email,periodo_inicio:formatDate(closure.period_start),periodo_fim:formatDate(closure.period_end),contrato_codigo:contract.code||'—',contrato_servico:contract.service||'—',valor_total:new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(closure.total_value||0)),numero_nfse:invoice?.invoice_number||'—',data_emissao:invoice?.issue_date?formatDate(invoice.issue_date):'—',status:definition(event!,recipientRole)?.label||closure.status,nome_empresa:company?.name||'—'});
     try{
-      const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${resendKey}`,'Content-Type':'application/json'},body:JSON.stringify({from:mailFrom,to:[person.email],subject,html})});
-      const payload=await response.json(); if(!response.ok) throw new Error(payload?.message||'Falha do provedor de e-mail');
+      const payload=await sendMail(person.email,rendered);
       await admin.from('mei_notifications').update({status:'sent',sent_at:new Date().toISOString(),updated_at:new Date().toISOString(),provider_message_id:payload.id||null}).eq('id',notification!.id);
       results.push({email:person.email,status:'sent'});
     }catch(error){
@@ -111,4 +127,5 @@ Deno.serve(async request=>{
     }
   }
   return json({ok:true,results});
+  }catch(error){console.error('Falha de notificação',error);return json({error:'Não foi possível processar a notificação.'},500);}
 });
