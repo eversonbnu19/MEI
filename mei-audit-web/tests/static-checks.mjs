@@ -1,3 +1,4 @@
+import vm from 'node:vm';
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -16,19 +17,19 @@ const auditorErp=read('patch-auditor-erp.js');
 const guard=read('entry-guard.js');
 const sw=read('sw.js');
 
-assert.match(index,/Gestão de Contratos v36/,'index deve identificar visualmente a versao v36');
-assert.match(index,/boot\.js\?v=36/,'index deve carregar boot v36');
-assert.match(index,/entry-guard\.js\?v=36/,'index deve carregar guarda de entrada v36');
-assert.match(boot,/const APP_VERSION='v36'/,'boot deve declarar v36');
+assert.match(index,/Gestão de Contratos v36.1/,'index deve identificar visualmente a versao v36.1');
+assert.match(index,/boot\.js\?v=36.1/,'index deve carregar boot v36.1');
+assert.match(index,/entry-guard\.js\?v=36.1/,'index deve carregar guarda de entrada v36.1');
+assert.match(boot,/const APP_VERSION='v36.1'/,'boot deve declarar v36.1');
 assert.match(boot,/mei-company-status/,'entrada deve consultar se a empresa principal ja existe');
 assert.match(boot,/const signupBlock=exists\?'':/,'cadastro inicial deve aparecer apenas quando nao existe empresa');
 assert.match(boot,/if\(await companyExists\(\)\)/,'rota de cadastro deve bloquear quando empresa ja existe');
 assert.match(boot,/return true;/,'falha na verificacao deve ocultar cadastro por seguranca');
-assert.match(boot,/app\.js\?v=36/,'boot deve carregar app v36');
-assert.match(boot,/patch-preclose-review\.js\?v=36/,'boot deve carregar pre-conferencia v36');
-assert.match(boot,/patch-notifications\.js\?v=36/,'boot deve carregar notificações v36');
-assert.match(boot,/patch-auditor-erp\.js\?v=36/,'boot deve carregar pendências de ERP v36');
-assert.match(boot,/patch-logout-return\.js\?v=36/,'boot deve carregar hotfix de logout v36');
+assert.match(boot,/app\.js\?v=36.1/,'boot deve carregar app v36.1');
+assert.match(boot,/patch-preclose-review\.js\?v=36.1/,'boot deve carregar pre-conferencia v36.1');
+assert.match(boot,/patch-notifications\.js\?v=36.1/,'boot deve carregar notificações v36.1');
+assert.match(boot,/patch-auditor-erp\.js\?v=36.1/,'boot deve carregar pendências de ERP v36.1');
+assert.match(boot,/patch-logout-return\.js\?v=36.1/,'boot deve carregar hotfix de logout v36.1');
 assert.match(app,/navigator\.geolocation\.getCurrentPosition/,'registro por hora deve solicitar GPS');
 assert.match(app,/maximumAge:0/,'registro deve rejeitar localização em cache');
 assert.match(app,/p_latitude:gps\.latitude/,'entrada deve enviar coordenada ao servidor');
@@ -63,10 +64,19 @@ assert.doesNotMatch(auditorErp,/location\.reload/,'confirmação no ERP não dev
 assert.doesNotMatch(auditorErp,/__GESTAO_NOTIFY__/,'confirmação no ERP deve usar apenas o disparo global');
 assert.match(auditorErp,/refreshPendingPanel/,'confirmação no ERP deve atualizar a pendência em tela');
 assert.match(boot,/window\.__GESTAO_APP_OPENING__/,'inicialização deve impedir que login sobrescreva sessão restaurada');
-assert.match(sw,/gestao-contratos-v36/,'service worker deve usar cache v36');
+assert.match(sw,/gestao-contratos-v36.1/,'service worker deve usar cache v36.1');
 assert.match(sw,/patch-notifications\.js/,'service worker deve incluir notificações');
 assert.match(sw,/patch-auditor-erp\.js/,'service worker deve incluir pendências de ERP');
 assert.match(sw,/patch-preclose-review\.js/,'service worker deve incluir a pré-conferência');
 assert.match(sw,/patch-logout-return\.js/,'service worker deve incluir hotfix de logout');
 
-console.log('OK - v36: verificações estáticas aprovadas.');
+console.log('OK - v36.1: verificações estáticas aprovadas.');
+
+const patchFunction=boot.slice(boot.indexOf('function patchPanelSource('),boot.indexOf('function openApp('));
+for(const source of [app.replace(/\r\n?/g,'\n'),app.replace(/\r\n?/g,'\n').replace(/\n/g,'\r\n')]){
+ const transformed=vm.runInNewContext(patchFunction+';patchPanelSource(source)',{source});
+ assert.doesNotMatch(transformed,/^import /m,'painel Blob deve usar cliente já inicializado, sem imports relativos');
+ assert.match(transformed,/const sb = window\.__GESTAO_SB__/,'carregador deve compartilhar cliente autenticado');
+ assert.match(transformed,/__GESTAO_AFTER_LOGIN_PROMISE__/,'proteção de login deve ser aplicada com LF e CRLF');
+}
+console.log('OK - carregamento do painel validado com LF e CRLF.');

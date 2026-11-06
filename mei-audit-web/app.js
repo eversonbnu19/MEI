@@ -157,7 +157,7 @@ async function renderCompany(){
   if(emailOwner?.user_id===profile.id) tabs.push(['configuracoes','Configurações']);
   if(tab==='configuracoes'){
     if(emailOwner?.user_id!==profile.id) throw new Error('Somente a Empresa principal pode acessar Configurações.');
-    const {mountEmailSettings}=await import(new URL('./email-settings.js?v=36',window.location.href).href);
+    const {mountEmailSettings}=await import(new URL('./email-settings.js?v=36.1',window.location.href).href);
     return mountEmailSettings({sb,cid,shell,tabs});
   }
   if(tab==='usuarios') return companyUsers(tabs,cid);
