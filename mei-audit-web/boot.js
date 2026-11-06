@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
 
-const APP_VERSION='v36';
+const APP_VERSION='v36.1';
 window.__GESTAO_BOOT_STARTED__=true;
 window.__GESTAO_APP_VERSION__=APP_VERSION;
 const app=document.querySelector('#app');
@@ -116,6 +116,7 @@ async function showCompanySignup(){
 }
 
 function patchPanelSource(source){
+  source=source.replace(/\r\n?/g,'\n');
   source=source.replace(
     "import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';\nimport { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';\n\nconst sb = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);",
     "const sb = window.__GESTAO_SB__;\nif(!sb) throw new Error('Cliente do sistema não inicializado.');"
@@ -157,21 +158,21 @@ function openApp(){
   window.__GESTAO_APP_OPENING__=true;
   appOpenPromise=(async()=>{
     window.__GESTAO_SB__=sb;
-    const response=await fetch('./app.js?v=36',{cache:'no-store'});
+    const response=await fetch('./app.js?v=36.1',{cache:'no-store'});
     if(!response.ok) throw new Error('Não foi possível carregar o painel.');
     const source=patchPanelSource(await response.text());
     const blobUrl=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));
     try{await import(blobUrl);}finally{URL.revokeObjectURL(blobUrl);}
     showPanelVersion();
-    import('./patch-direct-users.js?v=36').catch(console.error);
-    import('./patch-company-dashboard.js?v=36').catch(console.error);
-    import('./patch-contract-cancel.js?v=36').catch(console.error);
-    import('./patch-audit-payment.js?v=36').catch(console.error);
-    import('./patch-entry-adjustments.js?v=36').catch(console.error);
-    import('./patch-preclose-review.js?v=36').catch(console.error);
-    import('./patch-notifications.js?v=36').catch(console.error);
-    import('./patch-auditor-erp.js?v=36').catch(console.error);
-    import('./patch-logout-return.js?v=36').catch(console.error);
+    import('./patch-direct-users.js?v=36.1').catch(console.error);
+    import('./patch-company-dashboard.js?v=36.1').catch(console.error);
+    import('./patch-contract-cancel.js?v=36.1').catch(console.error);
+    import('./patch-audit-payment.js?v=36.1').catch(console.error);
+    import('./patch-entry-adjustments.js?v=36.1').catch(console.error);
+    import('./patch-preclose-review.js?v=36.1').catch(console.error);
+    import('./patch-notifications.js?v=36.1').catch(console.error);
+    import('./patch-auditor-erp.js?v=36.1').catch(console.error);
+    import('./patch-logout-return.js?v=36.1').catch(console.error);
   })();
   appOpenPromise.catch(()=>{appOpenPromise=null;window.__GESTAO_APP_OPENING__=false;});
   return appOpenPromise;
