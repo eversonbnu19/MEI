@@ -45,7 +45,7 @@ function shell(content,tabs=[]){
   const roleLabel=profile.role==='mei'?'Execução mobile':profile.role==='company'?'Gestão da empresa':'Auditoria da empresa';
   app.innerHTML=`<header class="top"><div><b>MEI Contratos Auditáveis</b><small>${roleLabel}</small></div><div><small>${esc(profile.name||profile.email)}</small><button id="logout" class="sec">Sair</button></div></header><main class="wrap ${profile.role==='mei'?'mei-mobile':''}">${tabs.length?`<nav class="tabs">${tabs.map(x=>`<button data-tab="${x[0]}" class="${tab===x[0]?'active':''}">${x[1]}</button>`).join('')}</nav>`:''}${content}</main>`;
   document.querySelector('#logout').onclick=logout;
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(document.querySelector('.email-model[data-dirty="true"]')&&!confirm('Há mensagens não salvas. Sair sem salvar?'))return;tab=b.dataset.tab;render();});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{if(document.querySelector('.email-model[data-dirty="true"],.reminder-model[data-dirty="true"]')&&!confirm('Há mensagens não salvas. Sair sem salvar?'))return;tab=b.dataset.tab;render();});
 }
 
 async function loginView(){
@@ -157,8 +157,8 @@ async function renderCompany(){
   if(emailOwner?.user_id===profile.id) tabs.push(['configuracoes','Configurações']);
   if(tab==='configuracoes'){
     if(emailOwner?.user_id!==profile.id) throw new Error('Somente a Empresa principal pode acessar Configurações.');
-    const {mountEmailSettings}=await import(new URL('./email-settings.js?v=36.1',window.location.href).href);
-    return mountEmailSettings({sb,cid,shell,tabs});
+    const {mountSettings}=await import(new URL('./settings-home.js?v=37',window.location.href).href);
+    return mountSettings({sb,cid,shell,tabs});
   }
   if(tab==='usuarios') return companyUsers(tabs,cid);
   if(tab==='contratos') return companyContracts(tabs,cid);
@@ -166,6 +166,9 @@ async function renderCompany(){
   const cs=await q('mei_contracts',{eq:{company_id:cid}}), cl=await q('mei_closures',{eq:{company_id:cid}});
   const people=await sb.rpc('mei_company_people',{p_company:cid});
   shell(`<div class="grid"><div class="card kpi"><small>Usuários vinculados</small><strong>${people.data?.length||0}</strong></div><div class="card kpi"><small>Contratos</small><strong>${cs.length}</strong></div><div class="card kpi"><small>Aguardando NF</small><strong>${cl.filter(x=>x.status==='awaiting_invoice').length}</strong></div><div class="card kpi"><small>Total fechado</small><strong>${brl(cl.reduce((s,x)=>s+Number(x.total_value),0))}</strong></div></div><div class="card"><h2>Fluxo seguro de cadastro</h2><p>1. A empresa é o cadastro principal.</p><p>2. A empresa envia convites por e-mail para MEIs e Auditoria.</p><p>3. Cada convidado aceita o convite e passa a enxergar somente os dados desta empresa.</p></div>`,tabs);
+  if(emailOwner?.user_id===profile.id){
+    try{const {mountPendingReminder}=await import(new URL('./closure-reminders.js?v=37',window.location.href).href);await mountPendingReminder({sb,cid});}catch(e){console.warn('Aviso de fechamento indisponível',e);}
+  }
 }
 async function companyUsers(tabs,cid){
   const r=await sb.rpc('mei_company_people',{p_company:cid}); if(r.error) throw r.error;

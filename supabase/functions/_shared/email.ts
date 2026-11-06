@@ -7,10 +7,10 @@ export async function contentFor(admin:any,companyId:string,event:string,role:st
  if(error)throw error;
  return data||standard;
 }
-export async function sendMail(to:string,content:{subject:string,html:string}){
+export async function sendMail(to:string,content:{subject:string,html:string},idempotencyKey?:string){
  const key=Deno.env.get('RESEND_API_KEY');
  if(!key)throw new Error('Serviço de e-mail não configurado');
- const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({from:MAIL_FROM,to:[to],...content})});
+ const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json',...(idempotencyKey?{'Idempotency-Key':idempotencyKey}:{})},body:JSON.stringify({from:MAIL_FROM,to:[to],subject:content.subject,html:content.html})});
  const payload=await response.json();
  if(!response.ok)throw new Error(payload?.message||'Falha do provedor de e-mail');
  return payload;

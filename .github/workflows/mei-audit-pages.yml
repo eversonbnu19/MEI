@@ -32,6 +32,7 @@ jobs:
           node mei-audit-web/tests/static-checks.mjs
           node --test mei-audit-web/tests/preclose-review.test.mjs
           node mei-audit-web/tests/email-settings.test.mjs
+          node mei-audit-web/tests/closure-reminders.test.mjs
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
